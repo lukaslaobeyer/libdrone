@@ -1,0 +1,51 @@
+#ifndef LIBDRONE_ARDRONE2_H
+#define LIBDRONE_ARDRONE2_H
+
+#include <drone.h>
+#include <drones/fpvdrone.h>
+#include <types.h>
+#include <drones/ardrone2/constants.h>
+
+#include "controllink.h"
+#include "navdata/navdatamanager.h"
+#include "video/videomanager.h"
+
+#include <string>
+#include <stdexcept>
+
+#include <boost/asio.hpp>
+
+class ARDrone2 : public FPVDrone
+{
+	public:
+		explicit ARDrone2(std::string ip);
+		ARDrone2();
+
+		void setIP(std::string ip);
+
+	protected:
+		drone::connectionstatus tryConnecting();
+		void updateCycle();
+		void beforeUpdate();
+		bool decodeNavdata(std::shared_ptr<drone::navdata> navdata);
+		bool processCommand(drone::command &command) = 0;
+		bool processNoCommand() = 0;
+		bool decodeVideo(cv::Mat &frame);
+		void connectionLost();
+
+	private:
+		std::string _ip;
+		boost::asio::io_service *_io_service = nullptr;
+
+		ControlLink _cl;
+		NavdataManager _nm;
+		VideoManager _vm;
+
+		int _default_codec = ardrone2::config::codec::H264_360P;
+
+		std::shared_ptr<ardrone2::navdata> _navdata = std::make_shared<ardrone2::navdata>();
+
+		std::vector<ATCommand> _commandqueue;
+};
+
+#endif
