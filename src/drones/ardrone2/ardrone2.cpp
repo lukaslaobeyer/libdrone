@@ -170,17 +170,47 @@ bool ARDrone2::processCommand(drone::command &command)
 	case drone::commands::attitude:
 		Eigen::Vector3f attitude = boost::spirit::any_cast<Eigen::Vector3f>(command.parameters[0]);
 		float vspeed = boost::spirit::any_cast<float>(command.parameters[1]);
-
+        // TODO: Retrieve maximum values and compute below variables
 		float phi, theta, gaz, yaw;
 
 		_commandqueue.push_back(AttitudeCommand(phi, theta, gaz, yaw));
 
 		break;
-	case drone::commands::emergency: break;
-	case drone::commands::fttrim: break;
-	case drone::commands::id: break;
-	case drone::commands::land: break;
-	case drone::commands::takeoff: break;
+	case drone::commands::emergency:
+	    _commandqueue.push_back(EmergencyCommand(true));
+	    break;
+	case drone::commands::fttrim:
+	    _commandqueue.push_back(FlatTrimCommand());
+	    break;
+	case drone::commands::land:
+	    _commandqueue.push_back(LandCommand());
+	    break;
+	case drone::commands::takeoff:
+	    _commandqueue.push_back(TakeOffCommand());
+	    break;
+	// AR.Drone 2.0 specific commands:  
+	case ardrone2::commands::magnetometercalibration:
+	    _commandqueue.push_back(MagnetometerCalibrationCommand());
+	    break;
+	case ardrone2::commands::configuration:
+	    string key = boost::spirit::any_cast<string>(command.parameters[0]);
+	    string value = boost::spirit::any_cast<string>(command.parameters[1]);
+	    
+	    _commandqueue.push_back(ConfigCommand(key, value));
+	    break;
+	case ardrone2::commands::recordonusb:
+	    bool record = boost::spirit::any_cast<bool>(command.parameters[0]);
+	    
+	    _commandqueue.push_back(RecordOnUSBCommand(record));
+	    break;
+	case ardrone2::command::switchview
+	    ardrone2::command::switchview::view view = boost::spirit::any_cast<ardrone2::command::switchview::view>(command.parameters[0]);
+	    bool front = false;
+	    if(view == ardrone2::command::switchview::view::FRONT)
+	    {
+	        front = true;
+	    }
+	    _commandqueue.push_back(ZapCommand(front));
 	}
 	return true;
 }

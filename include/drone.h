@@ -34,6 +34,7 @@ class Drone
 		 * Navdata retrieval functions
 		 */
 		drone::navdata getNavdata();
+		Eigen::Vector3f getMaximumAttitude(); // TODO: this
 
 		/*
 		 * Drone flight commands
