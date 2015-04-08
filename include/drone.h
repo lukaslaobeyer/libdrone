@@ -2,6 +2,7 @@
 #define LIBDRONE_DRONE_H
 
 #include <types.h>
+#include <commands.h>
 #include <interface/iconnectionstatuslistener.h>
 #include <interface/inavdatalistener.h>
 
@@ -33,7 +34,7 @@ class Drone
 		/*
 		 * Navdata retrieval functions
 		 */
-		drone::navdata getNavdata();
+		std::shared_ptr<drone::navdata> getNavdata();
 		Eigen::Vector3f getMaximumAttitude(); // TODO: this
 
 		/*
@@ -66,8 +67,8 @@ class Drone
 	private:
 		void runUpdateLoop();
 
-		std::atomic<bool> _stop_flag = false;
-		std::atomic<bool> _connected = false;
+		std::atomic<bool> _stop_flag;
+		std::atomic<bool> _connected;
 
 		boost::thread *_updater = nullptr;
 

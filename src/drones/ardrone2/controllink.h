@@ -1,5 +1,5 @@
-#ifndef CONTROLLINK_H
-#define CONTROLLINK_H
+#ifndef ARDRONE2_CONTROLLINK_H
+#define ARDRONE2_CONTROLLINK_H
 
 #include <string>
 #include <vector>

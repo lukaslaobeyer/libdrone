@@ -5,10 +5,12 @@
 #include <drones/fpvdrone.h>
 #include <types.h>
 #include <drones/ardrone2/constants.h>
+#include <drones/ardrone2/types.h>
+#include <drones/ardrone2/commands.h>
 
-#include "controllink.h"
-#include "navdata/navdatamanager.h"
-#include "video/videomanager.h"
+#include "../src/drones/ardrone2/controllink.h"
+#include "../src/drones/ardrone2/navdata/navdatamanager.h"
+#include "../src/drones/ardrone2/video/videomanager.h"
 
 #include <string>
 #include <stdexcept>

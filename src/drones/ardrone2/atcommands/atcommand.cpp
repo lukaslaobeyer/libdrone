@@ -1,5 +1,6 @@
 #include "atcommand.h"
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -48,6 +49,7 @@ unsigned int ATCommand::floatToIntBits(float f)
 {
    static_assert(sizeof(float) == sizeof(unsigned int), "sizeof(float) must be equal to sizeof(unsigned int)!");
    unsigned int ret;
-   memcpy(&ret, &f, sizeof(float));
+   //memcpy(&ret, &f, sizeof(float));
+   std::copy(&f, &f + sizeof(float), &ret);
    return ret;
 }

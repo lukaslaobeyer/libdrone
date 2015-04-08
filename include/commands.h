@@ -5,55 +5,55 @@
 
 #include <Eigen/Dense>
 #include <cstdint>
-#include <boost/spirit/home/support/detail/hold_any.hpp>
+#include <boost/any.hpp>
 
 namespace drone
 {
 	struct command
 	{
 		int command;
-		std::vector<boost::spirit::hold_any> parameters;
+		std::vector<boost::any> parameters;
 	};
 
 	namespace commands
 	{
 		struct id
 		{
-			const int EMERGENCY = 0x00;
-			const int TAKEOFF  	= 0x01;
-			const int LAND     	= 0x02;
-			const int ATTITUDE 	= 0x03;
-			const int FTTRIM	= 0x04;
+			static const int EMERGENCY  = 0x00;
+			static const int TAKEOFF  	= 0x01;
+			static const int LAND     	= 0x02;
+			static const int ATTITUDE 	= 0x03;
+			static const int FTTRIM 	= 0x04;
 		};
 
-		struct emergency : command
+		struct emergency : drone::command
 		{
 			emergency()
-			: command{id::EMERGENCY} {}
+			: drone::command{id::EMERGENCY} {}
 		};
 
-		struct takeoff : command
+		struct takeoff : drone::command
 		{
 			takeoff()
-			: command{id::TAKEOFF} {}
+			: drone::command{id::TAKEOFF} {}
 		};
 
-		struct land : command
+		struct land : drone::command
 		{
 			land()
-			: command{id::LAND} {}
+			: drone::command{id::LAND} {}
 		};
 
-		struct fttrim : command
+		struct fttrim : drone::command
 		{
 			fttrim()
-			: command{id::FTTRIM} {}
+			: drone::command{id::FTTRIM} {}
 		};
 
-		struct attitude : command
+		struct attitude : drone::command
 		{
 			explicit attitude(Eigen::Vector3f attitude = Eigen::Vector3f(0, 0, 0), float vspeed = 0)
-			: command{id::ATTITUDE, std::vector<boost::spirit::hold_any>{attitude, vspeed}} {}
+			: drone::command{id::ATTITUDE, std::vector<boost::any>{boost::any(attitude), boost::any(vspeed)}} {}
 			/*
 			 * attitude (Eigen::Vector3f):
 			 *   0 (x-Axis):

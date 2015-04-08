@@ -1,7 +1,8 @@
 #ifndef INAVDATALISTENER_H
 #define INAVDATALISTENER_H
 
-#include "navdatakeys.h"
+#include <types.h>
+
 #include <memory>
 
 class INavdataListener

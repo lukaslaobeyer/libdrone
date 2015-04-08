@@ -4,7 +4,7 @@
 
 drone::connectionstatus Drone::connect()
 {
-	if(_connected == true)
+	if(_connected.load())
 	{
 		return drone::connectionstatus::ALREADY_CONNECTED;
 	}
@@ -12,19 +12,19 @@ drone::connectionstatus Drone::connect()
 	drone::connectionstatus status = tryConnecting();
 	if(status == drone::connectionstatus::CONNECTION_ESTABLISHED)
 	{
-		_connected = true;
+		_connected.store(true);
 		notifyConnectionEstablished();
 	}
 	else
 	{
-		_connected = false;
+		_connected.store(false);
 	}
 	return status;
 }
 
 bool Drone::isConnected()
 {
-	return _connected;
+	return _connected.load();
 }
 
 void Drone::addNavdataListener(INavdataListener *listener)
@@ -51,7 +51,7 @@ void Drone::notifyNavdataListeners(std::shared_ptr<const drone::navdata> navdata
 {
 	for(INavdataListener *i : _ndlisteners)
 	{
-		i->navdataAvailable(std::shared_ptr<const drone::navdata> navdata);
+		i->navdataAvailable(navdata);
 	}
 }
 
@@ -73,14 +73,14 @@ void Drone::notifyConnectionLost()
 
 void Drone::markConnectionLost()
 {
-	_connected = false;
+	_connected.store(false);
 }
 
 bool Drone::startUpdateLoop()
 {
 	if(_updater == nullptr)
 	{
-		if(_connected)
+		if(_connected.load())
 		{
 			_stop_flag = false;
 			_updater = new boost::thread(&Drone::runUpdateLoop, this);
@@ -90,12 +90,12 @@ bool Drone::startUpdateLoop()
 			return false;
 		}
 	}
-	else if(_connected)
+	else if(_connected.load())
 	{
 		// When the connection is lost the _updater thread still exists. If it is reestablished, then it needs to be killed.
 
 		stopUpdateLoop();
-		_connected = true;
+		_connected.store(true);
 		startUpdateLoop();
 	}
 
@@ -105,7 +105,7 @@ bool Drone::startUpdateLoop()
 void Drone::stopUpdateLoop()
 {
 	_stop_flag = true;
-	_connected = false;
+	_connected.store(false);
 
 	if(_updater != nullptr)
 	{
@@ -135,7 +135,7 @@ void Drone::runUpdateLoop()
 		timer.start();
 
 		// Check connection status and handle unexpected loss of connection
-		if(!_connected) {
+		if(!_connected.load()) {
 			notifyConnectionLost();
 			connectionLost();
 			return;
@@ -147,8 +147,8 @@ void Drone::runUpdateLoop()
 		// Process command queue
 		if(_commandqueue.empty())
 		{
-			_connected = processNoCommand();
-			if(!_connected)
+			_connected.store(processNoCommand());
+			if(!_connected.load())
 			{
 				continue;
 			}
@@ -157,8 +157,8 @@ void Drone::runUpdateLoop()
 		{
 			for(drone::command command : _commandqueue)
 			{
-				_connected = processCommand(command);
-				if(!_connected)
+				_connected.store(processCommand(command));
+				if(!_connected.load())
 				{
 					_commandqueue.clear();
 					continue;
@@ -188,14 +188,14 @@ void Drone::runUpdateLoop()
 	}
 }
 
-drone::navdata Drone::getNavdata()
+std::shared_ptr<drone::navdata> Drone::getNavdata()
 {
-	return &_navdata;
+	return _navdata;
 }
 
 bool Drone::addCommand(drone::command command)
 {
-	if(!_connected)
+	if(!_connected.load())
 	{
 		return false;
 	}

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <drones/ardrone2/constants.h>
 
 class ATCommand
 {

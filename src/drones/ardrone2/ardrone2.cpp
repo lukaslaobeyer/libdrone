@@ -68,9 +68,9 @@ drone::connectionstatus ARDrone2::tryConnecting()
 		_nm.update();
 
 		// Check that navdata has indeed been received
-		_connected = _nm.isConnected();
+		bool connected = _nm.isConnected();
 
-		if(_connected)
+		if(connected)
 		{
 			_vm.init(_ip, *_io_service);
 			_vm.update();
@@ -152,9 +152,9 @@ bool ARDrone2::decodeNavdata(shared_ptr<drone::navdata> navdata)
 	_navdata->attitude = Eigen::Vector3f(ardrone2_navdata->theta, ardrone2_navdata->psi, ardrone2_navdata->phi);
 	_navdata->batteryStatus = ardrone2_navdata->vbatpercentage / 100;
 	_navdata->flying = ardrone2_navdata->ctrlstate & ardrone2::ctrlstate::ARDRONE_FLY_MASK;
-	_navdata->linearvelocity = Eigen::Vector2f(ardrone2_navdata->vx, ardrone2_navdata->vy, ardrone2_navdata->vz);
+	_navdata->linearvelocity = Eigen::Vector3f(ardrone2_navdata->vx, ardrone2_navdata->vy, ardrone2_navdata->vz);
 	_navdata->linkQuality = ardrone2_navdata->wifipercentage;
-	_navdata->magnetometer = Eigen::Vector2f(ardrone2_navdata->mx, ardrone2_navdata->my, ardrone2_navdata->mz);
+	_navdata->magnetometer = Eigen::Vector3f(ardrone2_navdata->mx, ardrone2_navdata->my, ardrone2_navdata->mz);
 	_navdata->pressure = ardrone2_navdata->p;
 
 	navdata = _navdata;
@@ -167,50 +167,68 @@ bool ARDrone2::processCommand(drone::command &command)
 	// TODO: Convert standard command to ATCommand and push back to command queue
 	switch(command.command)
 	{
-	case drone::commands::attitude:
-		Eigen::Vector3f attitude = boost::spirit::any_cast<Eigen::Vector3f>(command.parameters[0]);
-		float vspeed = boost::spirit::any_cast<float>(command.parameters[1]);
-        // TODO: Retrieve maximum values and compute below variables
-		float phi, theta, gaz, yaw;
-
-		_commandqueue.push_back(AttitudeCommand(phi, theta, gaz, yaw));
-
+	case drone::commands::id::ATTITUDE:
+		{
+    		Eigen::Vector3f attitude = boost::any_cast<Eigen::Vector3f>(command.parameters[0]);
+    		float vspeed = boost::any_cast<float>(command.parameters[1]);
+            // TODO: Retrieve maximum values and compute below variables
+    		float phi, theta, gaz, yaw;
+    
+    		_commandqueue.push_back(AttitudeCommand(phi, theta, gaz, yaw));
+		}
 		break;
-	case drone::commands::emergency:
-	    _commandqueue.push_back(EmergencyCommand(true));
+	case drone::commands::id::EMERGENCY:
+	    {
+	        _commandqueue.push_back(EmergencyCommand(true));
+	    }
 	    break;
-	case drone::commands::fttrim:
-	    _commandqueue.push_back(FlatTrimCommand());
+	case drone::commands::id::FTTRIM:
+	    {
+	        _commandqueue.push_back(FlatTrimCommand());
+	    }
 	    break;
-	case drone::commands::land:
-	    _commandqueue.push_back(LandCommand());
+	case drone::commands::id::LAND:
+	    {
+	        _commandqueue.push_back(LandCommand());
+	    }
 	    break;
-	case drone::commands::takeoff:
-	    _commandqueue.push_back(TakeOffCommand());
+	case drone::commands::id::TAKEOFF:
+	    {
+	        _commandqueue.push_back(TakeOffCommand());
+	    }
 	    break;
 	// AR.Drone 2.0 specific commands:  
-	case ardrone2::commands::magnetometercalibration:
-	    _commandqueue.push_back(MagnetometerCalibrationCommand());
-	    break;
-	case ardrone2::commands::configuration:
-	    string key = boost::spirit::any_cast<string>(command.parameters[0]);
-	    string value = boost::spirit::any_cast<string>(command.parameters[1]);
-	    
-	    _commandqueue.push_back(ConfigCommand(key, value));
-	    break;
-	case ardrone2::commands::recordonusb:
-	    bool record = boost::spirit::any_cast<bool>(command.parameters[0]);
-	    
-	    _commandqueue.push_back(RecordOnUSBCommand(record));
-	    break;
-	case ardrone2::command::switchview
-	    ardrone2::command::switchview::view view = boost::spirit::any_cast<ardrone2::command::switchview::view>(command.parameters[0]);
-	    bool front = false;
-	    if(view == ardrone2::command::switchview::view::FRONT)
+	case ardrone2::commands::id::MAGNETOCALIB:
 	    {
-	        front = true;
+	        _commandqueue.push_back(MagnetometerCalibrationCommand());
 	    }
-	    _commandqueue.push_back(ZapCommand(front));
+	    break;
+	case ardrone2::commands::id::CONFIG:
+	    {
+	        string key = boost::any_cast<string>(command.parameters[0]);
+	        string value = boost::any_cast<string>(command.parameters[1]);
+	    
+	        _commandqueue.push_back(ConfigCommand(key, value));
+	    }
+	    break;
+	case ardrone2::commands::id::RECORDONUSB:
+	    {
+	        bool record = boost::any_cast<bool>(command.parameters[0]);
+	    
+	        _commandqueue.push_back(RecordOnUSBCommand(record));
+	    }
+	    break;
+	case ardrone2::commands::id::SWITCHVIEW:
+	    {
+	        ardrone2::commands::switchview::view view = boost::any_cast<ardrone2::commands::switchview::view>(command.parameters[0]);
+	        bool front = false;
+	        if(view == ardrone2::commands::switchview::view::FRONT)
+	        {
+	            front = true;
+	        }
+	        _commandqueue.push_back(ZapCommand(front));
+	    }
+	    break;
 	}
 	return true;
 }
@@ -234,7 +252,7 @@ bool ARDrone2::decodeVideo(cv::Mat &frame)
 
 	frame = _vm.getVideoFrame();
 
-	if(_frame.empty())
+	if(frame.empty())
 	{
 		return false;
 	}
