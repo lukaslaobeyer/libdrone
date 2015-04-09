@@ -31,6 +31,14 @@ void ARDrone2::setIP(string ip)
 	_ip = ip;
 }
 
+drone::limits ARDrone2::getLimits()
+{
+    //TODO: this
+    drone::limits limits;
+    
+    return limits;
+}
+
 drone::connectionstatus ARDrone2::tryConnecting()
 {
 	try
@@ -171,10 +179,17 @@ bool ARDrone2::processCommand(drone::command &command)
 		{
     		Eigen::Vector3f attitude = boost::any_cast<Eigen::Vector3f>(command.parameters[0]);
     		float vspeed = boost::any_cast<float>(command.parameters[1]);
-            // TODO: Retrieve maximum values and compute below variables
-    		float phi, theta, gaz, yaw;
-    
-    		_commandqueue.push_back(AttitudeCommand(phi, theta, gaz, yaw));
+
+            drone::limits limits = getLimits();
+
+            float theta = applyLimit(attitude(0), limits.angle); // pitch
+            float phi = applyLimit(attitude(1), limits.angle); // roll
+            float yaw = applyLimit(attitude(2), limits.yawspeed); // yawspeed
+            float gaz = applyLimit(vspeed, limits.vspeed); // vspeed
+
+            _latestAttitudeCommand = AttitudeCommand(phi, theta, gaz, yaw);
+
+    		_commandqueue.push_back(_latestAttitudeCommand);
 		}
 		break;
 	case drone::commands::id::EMERGENCY:
@@ -235,7 +250,7 @@ bool ARDrone2::processCommand(drone::command &command)
 
 bool ARDrone2::processNoCommand()
 {
-	// TODO: Check how many successive cycles without commands have been executed, if not many, send PCMD with values from previous command, else hover
+	_commandqueue.push_back(_latestAttitudeCommand);
 	return true;
 }
 

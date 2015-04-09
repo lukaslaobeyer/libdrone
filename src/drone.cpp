@@ -1,5 +1,7 @@
 #include <drone.h>
 
+#include <algorithm>
+
 #include <boost/timer/timer.hpp>
 
 drone::connectionstatus Drone::connect()
@@ -203,4 +205,9 @@ bool Drone::addCommand(drone::command command)
 	_commandqueue.push_back(command);
 
 	return true;
+}
+
+float Drone::applyLimit(float value, float threshold)
+{
+    return std::max(-threshold, std::min(value, threshold));
 }

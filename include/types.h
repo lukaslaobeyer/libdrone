@@ -19,6 +19,13 @@ namespace drone
 		Eigen::Vector3f attitude; // 0 (x-Axis): pitch/theta, 1 (y-Axis): roll/psi, 2 (z-Axis): yaw/phi; in radians
 		Eigen::Vector3f linearvelocity; // vx, vy, vz in m/s (warning: z may always be 0 with AR.Drone 2.0)
 	};
+	
+	struct limits
+	{
+	    float angle; // Maximum pitch and roll angle in radians
+	    float yawspeed; // Maximum yaw (rotation) speed in radians/second
+	    float vspeed; // Maximum vertical speed in m/s
+	};
 
 	enum connectionstatus
 	{

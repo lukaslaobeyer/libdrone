@@ -35,13 +35,17 @@ class Drone
 		 * Navdata retrieval functions
 		 */
 		std::shared_ptr<drone::navdata> getNavdata();
-		Eigen::Vector3f getMaximumAttitude(); // TODO: this
+		virtual drone::limits getLimits() = 0; // Returns limits for in-flight angles and speeds
 
 		/*
 		 * Drone flight commands
 		 */
 		bool addCommand(drone::command command); // Returns false if not connected, true otherwise
-
+		
+		/*
+		 * Utility functions
+		 */
+        static float applyLimit(float value, float threshold); // Clamp value so it never exceeds -threshold or threshold
 	protected:
 		/*
 		 * Event listener notification functions (to be used by drone implementation)

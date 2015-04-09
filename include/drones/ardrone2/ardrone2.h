@@ -12,6 +12,8 @@
 #include "../src/drones/ardrone2/navdata/navdatamanager.h"
 #include "../src/drones/ardrone2/video/videomanager.h"
 
+#include "../src/drones/ardrone2/atcommands/attitudecommand.h"
+
 #include <string>
 #include <stdexcept>
 
@@ -24,6 +26,8 @@ class ARDrone2 : public FPVDrone
 		ARDrone2();
 
 		void setIP(std::string ip);
+		
+		drone::limits getLimits();
 
 	protected:
 		drone::connectionstatus tryConnecting();
@@ -48,6 +52,8 @@ class ARDrone2 : public FPVDrone
 		std::shared_ptr<ardrone2::navdata> _navdata = std::make_shared<ardrone2::navdata>();
 
 		std::vector<ATCommand> _commandqueue;
+		
+		AttitudeCommand _latestAttitudeCommand;
 };
 
 #endif
