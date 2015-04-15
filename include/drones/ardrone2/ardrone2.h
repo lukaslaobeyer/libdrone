@@ -34,8 +34,8 @@ class ARDrone2 : public FPVDrone
 		void updateCycle();
 		void beforeUpdate();
 		bool decodeNavdata(std::shared_ptr<drone::navdata> navdata);
-		bool processCommand(drone::command &command) = 0;
-		bool processNoCommand() = 0;
+		bool processCommand(drone::command &command);
+		bool processNoCommand();
 		bool decodeVideo(cv::Mat &frame);
 		void connectionLost();
 

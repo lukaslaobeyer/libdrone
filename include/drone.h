@@ -15,7 +15,7 @@
 class Drone
 {
 	public:
-		virtual ~Drone() = 0;
+		virtual ~Drone() {};
 
 		/*
 		 * Setup related functions
