@@ -34,7 +34,7 @@ class Drone
 		/*
 		 * Navdata retrieval functions
 		 */
-		std::shared_ptr<drone::navdata> getNavdata();
+		//std::shared_ptr<drone::navdata> getNavdata();
 		virtual drone::limits getLimits() = 0; // Returns limits for in-flight angles and speeds
 
 		/*
@@ -63,7 +63,7 @@ class Drone
 		virtual drone::connectionstatus tryConnecting() = 0;
 		virtual void beforeUpdate() = 0; // Gets run at the beginning of each update cycle
 		virtual void updateCycle() = 0; // Gets run at a constant rate (at the end of the update cycle), put any miscellaneous functionality in here
-		virtual bool decodeNavdata(std::shared_ptr<drone::navdata> navdata) = 0; // Retrieve and process navdata here, store it in navdata given as parameter and return false if no new navdata available
+		virtual bool decodeNavdata(std::shared_ptr<drone::navdata> &navdata) = 0; // Retrieve and process navdata here, store it in navdata given as parameter and return false if no new navdata available
 		virtual bool processCommand(drone::command &command) = 0; // Process commands here, return false on failure
 		virtual bool processNoCommand() = 0; // Gets run when there is no command in the command queue; return false on failure
 		virtual void connectionLost() = 0; // Handle unexpected loss of connection here
@@ -76,7 +76,6 @@ class Drone
 
 		boost::thread *_updater = nullptr;
 
-		std::shared_ptr<drone::navdata> _navdata;
 		std::vector<drone::command> _commandqueue;
 
 		std::vector<INavdataListener *> _ndlisteners;

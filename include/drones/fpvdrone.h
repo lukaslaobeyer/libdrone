@@ -9,6 +9,8 @@
 class FPVDrone : public Drone
 {
 	public:
+		virtual ~FPVDrone() {};
+
 		void addVideoListener(IVideoListener *listener);
 		void removeVideoListener(IVideoListener *listener);
 

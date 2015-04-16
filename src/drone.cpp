@@ -170,10 +170,12 @@ void Drone::runUpdateLoop()
 		_commandqueue.clear();
 
 		// Retrieve and process navdata
-		bool newNavdata = decodeNavdata(_navdata);
+		std::shared_ptr<drone::navdata> navdata;
+		bool newNavdata = decodeNavdata(navdata);
+
 		if(newNavdata)
 		{
-			notifyNavdataListeners(_navdata);
+			notifyNavdataListeners(navdata);
 		}
 
 		// Call any miscellaneous functionality needed by implementation
@@ -190,10 +192,10 @@ void Drone::runUpdateLoop()
 	}
 }
 
-std::shared_ptr<drone::navdata> Drone::getNavdata()
+/*std::shared_ptr<drone::navdata> Drone::getNavdata()
 {
 	return _navdata;
-}
+}*/
 
 bool Drone::addCommand(drone::command command)
 {

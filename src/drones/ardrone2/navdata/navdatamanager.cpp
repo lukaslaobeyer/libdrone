@@ -223,6 +223,9 @@ bool NavdataManager::parseNavdata(char data[], int receivedbytes)
 		return false;
 	}
 
+	// Set sequence number
+	navdata.n = seqNum;
+
 	navdataAvailable = true;
 	return true;
 }

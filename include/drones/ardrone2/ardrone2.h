@@ -33,7 +33,7 @@ class ARDrone2 : public FPVDrone
 		drone::connectionstatus tryConnecting();
 		void updateCycle();
 		void beforeUpdate();
-		bool decodeNavdata(std::shared_ptr<drone::navdata> navdata);
+		bool decodeNavdata(std::shared_ptr<drone::navdata> &navdata);
 		bool processCommand(drone::command &command);
 		bool processNoCommand();
 		bool decodeVideo(cv::Mat &frame);
@@ -48,8 +48,6 @@ class ARDrone2 : public FPVDrone
 		VideoManager _vm;
 
 		int _default_codec = ardrone2::config::codec::H264_360P;
-
-		std::shared_ptr<ardrone2::navdata> _navdata = std::make_shared<ardrone2::navdata>();
 
 		std::vector<ATCommand> _commandqueue;
 		

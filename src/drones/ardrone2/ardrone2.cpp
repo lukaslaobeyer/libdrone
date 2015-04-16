@@ -142,30 +142,31 @@ void ARDrone2::updateCycle()
 	_commandqueue.clear();
 }
 
-bool ARDrone2::decodeNavdata(shared_ptr<drone::navdata> navdata)
+bool ARDrone2::decodeNavdata(shared_ptr<drone::navdata> &navdata)
 {
-	static int seqNum = 0;
+	uint32_t prevSeqNum = 0;
 
 	AFNavdata *ardrone2_navdata = _nm.getNavdata();
 
-	if(seqNum == ardrone2_navdata->n)
+	if(prevSeqNum >= ardrone2_navdata->n)
 	{
 		return false;
 	}
 
-	seqNum = ardrone2_navdata->n;
+	prevSeqNum = ardrone2_navdata->n;
 
-	_navdata->acceleration = Eigen::Vector3f(ardrone2_navdata->ax, ardrone2_navdata->ay, ardrone2_navdata->az);
-	_navdata->altitude = ardrone2_navdata->altitude / 100;
-	_navdata->attitude = Eigen::Vector3f(ardrone2_navdata->theta, ardrone2_navdata->psi, ardrone2_navdata->phi);
-	_navdata->batteryStatus = ardrone2_navdata->vbatpercentage / 100;
-	_navdata->flying = ardrone2_navdata->ctrlstate & ardrone2::ctrlstate::ARDRONE_FLY_MASK;
-	_navdata->linearvelocity = Eigen::Vector3f(ardrone2_navdata->vx, ardrone2_navdata->vy, ardrone2_navdata->vz);
-	_navdata->linkQuality = ardrone2_navdata->wifipercentage;
-	_navdata->magnetometer = Eigen::Vector3f(ardrone2_navdata->mx, ardrone2_navdata->my, ardrone2_navdata->mz);
-	_navdata->pressure = ardrone2_navdata->p;
+	navdata = make_shared<ardrone2::navdata>();
 
-	navdata = _navdata;
+	navdata->altitude = ardrone2_navdata->altitude;
+	navdata->attitude = Eigen::Vector3f(ardrone2_navdata->theta, ardrone2_navdata->psi, ardrone2_navdata->phi);
+	navdata->batteryStatus = ardrone2_navdata->vbatpercentage / 100;
+	navdata->flying = ardrone2_navdata->ctrlstate & ardrone2::ctrlstate::ARDRONE_FLY_MASK;
+	navdata->linearvelocity = Eigen::Vector3f(ardrone2_navdata->vx, ardrone2_navdata->vy, ardrone2_navdata->vz);
+	navdata->linkQuality = ardrone2_navdata->wifipercentage;
+
+	static_pointer_cast<ardrone2::navdata>(navdata)->acceleration = Eigen::Vector3f(ardrone2_navdata->ax, ardrone2_navdata->ay, ardrone2_navdata->az);
+	static_pointer_cast<ardrone2::navdata>(navdata)->magnetometer = Eigen::Vector3f(ardrone2_navdata->mx, ardrone2_navdata->my, ardrone2_navdata->mz);
+	static_pointer_cast<ardrone2::navdata>(navdata)->pressure = ardrone2_navdata->p;
 
 	return true;
 }

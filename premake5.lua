@@ -2,6 +2,9 @@ solution "libdrone"
     configurations {"Debug", "Release"}
     location "build"
 
+    configuration "Debug"
+        flags { "Symbols" }
+
 project "drone"
     kind "SharedLib"
     language "C++"
