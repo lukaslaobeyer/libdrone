@@ -58,7 +58,8 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		cout << "[ERROR]  Sorry, Bebop not yet supported!" << endl;
+		_drone = make_shared<Bebop>("192.168.42.1");
+		_drone->connect();
 		return 1;
 	}
 

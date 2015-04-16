@@ -4,6 +4,9 @@
 #include <drone.h>
 #include <drones/fpvdrone.h>
 #include <types.h>
+#include <drones/bebop/constants.h>
+
+#include "../src/drones/bebop/controllink.h"
 
 #include <boost/asio.hpp>
 
@@ -23,7 +26,7 @@ class Bebop : public FPVDrone
 		drone::connectionstatus tryConnecting();
 		void beforeUpdate();
 		void updateCycle();
-		bool decodeNavdata(std::shared_ptr<drone::navdata> navdata);
+		bool decodeNavdata(std::shared_ptr<drone::navdata> &navdata);
 		bool decodeVideo(cv::Mat &frame);
 		bool processCommand(drone::command &command);
 		bool processNoCommand();
