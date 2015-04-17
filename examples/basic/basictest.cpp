@@ -15,7 +15,7 @@ enum drone_type
 };
 
 drone_type drone_type;
-shared_ptr<Drone> _drone;
+unique_ptr<Drone> _drone = nullptr;
 
 class NavdataListener : public INavdataListener
 {
@@ -54,13 +54,14 @@ int main(int argc, char **argv)
 	// Setup drone and connect
 	if(drone_type == ARDRONE2)
 	{
-		_drone = make_shared<ARDrone2>("192.168.1.1");
+		_drone.reset(new ARDrone2());
 	}
 	else
 	{
-		_drone = make_shared<Bebop>("192.168.42.1");
-		_drone->connect();
-		return 1;
+		_drone.reset(new Bebop());
+//		_drone->connect();
+//		this_thread::sleep_for(chrono::milliseconds(1000));
+//		return 1;
 	}
 
 	NavdataListener listener;
@@ -83,7 +84,7 @@ int main(int argc, char **argv)
 	// Do stuff!
 	_drone->startUpdateLoop();
 
-	this_thread::sleep_for(chrono::milliseconds(5000));
+	this_thread::sleep_for(chrono::milliseconds(10000));
 
 	_drone->stopUpdateLoop();
 

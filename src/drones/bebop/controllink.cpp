@@ -1,6 +1,5 @@
 #include "controllink.h"
 
-#include <array>
 #include <string>
 
 #include <boost/property_tree/ptree.hpp>
@@ -24,7 +23,7 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	// Bebop discovery connection
 	tcp::resolver discovery_resolver(io_service);
 	tcp::resolver::query discovery_query(ip, to_string(bebop::DISCOVERY_PORT));
-	tcp::endpoint discovery_endpoint = *resolver.resolve(discovery_query);
+	tcp::endpoint discovery_endpoint = *discovery_resolver.resolve(discovery_query);
 
 	tcp::socket discovery_socket(io_service);
 	discovery_socket.open(tcp::v4());
@@ -72,17 +71,55 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	cout << "C2D port: " << c2d_port << endl;
 	
 	/////// INITIALIZE NAVDATA CONNECTION ///////
-	udp::resolver navdata_resolver(io_service);
-	udp::resolver::query navdata_query(udp::v4(), ip, to_string(c2d_port));
-	udp::endpoint navdata_endpoint = *resolver.resolve(navdata_query);
-	
-	_navdata_socket = unique_ptr(new udp::socket(io_service)); //TODO: C++14: Use make_unique
-	_navdata_socket->open(udp::v4());
-	_navdata_socket->bind(udp::endpoint(udp::v4(), c2d_port));
-	_navdata_socket->connect(navdata_endpoint);
+	_navdata_socket.reset(new udp::socket(io_service, udp::v4()));
+	_navdata_socket->bind(udp::endpoint(udp::v4(), bebop::D2C_PORT));
+
+	// Start receiving packets
+	startReceivingNavdata();
 }
 
-void controllink::startReceive()
+void controllink::startReceivingNavdata()
 {
-    _navdata_socket->async_receive_from(boost::asio::buffer(_receivedDataBuffer), sender_endpoint, boost::bind(&NavdataManager::packetReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	_navdata_socket->async_receive_from(boost::asio::buffer(_navdata_receivedDataBuffer), _navdata_sender_endpoint, boost::bind(&controllink::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+}
+
+void controllink::navdataPacketReceived(const boost::system::error_code &error, std::size_t bytes_transferred)
+{
+	if(!error)
+	{
+		//cout << bytes_transferred << endl;
+		cout << hex << (int) _navdata_receivedDataBuffer[0] << " " << (int) _navdata_receivedDataBuffer[1];
+		cout << " " << (int) _navdata_receivedDataBuffer[2] << " " << (int) _navdata_receivedDataBuffer[3] << dec;
+
+		if(_navdata_receivedDataBuffer[0] == 0x2)
+		{
+			if(_navdata_receivedDataBuffer[1] == 0x7f)
+			{
+				if(_navdata_receivedDataBuffer[3] == 0x13)
+				{
+					cout << "\tnavdata";
+				}
+				else if(_navdata_receivedDataBuffer[3] == 0x17)
+				{
+					cout << "\tvideo";
+				}
+			}
+			else if(_navdata_receivedDataBuffer[1] == 0)
+			{
+				if(_navdata_receivedDataBuffer[3] == 0xF)
+				{
+					cout << "\tping";
+				}
+			}
+		}
+
+		cout << endl;
+	}
+	else
+	{
+		//cout << "ERR " << error << endl;
+	}
+
+	// Receive next packet
+	startReceivingNavdata();
 }

@@ -28,11 +28,13 @@ drone::connectionstatus Bebop::tryConnecting()
 	{
 		if(_io_service == nullptr)
 		{
-			_io_service = new boost::asio::io_service;
+			_io_service.reset(new boost::asio::io_service);
 		}
 
-		bebop::controllink ctrllink;
-		ctrllink.init(_ip, *_io_service);
+		ctrllink.reset(new bebop::controllink);
+		ctrllink->init(_ip, *_io_service);
+
+		return drone::connectionstatus::CONNECTION_ESTABLISHED;
 	}
 	catch(const boost::system::system_error &e)
 	{
@@ -44,7 +46,28 @@ drone::connectionstatus Bebop::tryConnecting()
 
 void Bebop::beforeUpdate()
 {
+	static int zero_packets_counter = 0;
 
+	// Poll data
+	int packets = _io_service->poll();
+
+	// Detect loss of connection
+	if(packets == 0)
+	{
+		zero_packets_counter++;
+
+		if(zero_packets_counter >= 50)
+		{
+			// Definitely lost connection
+			cout << "[WARNING] Lost connection to AR.Drone!" << endl;
+
+			markConnectionLost();
+		}
+	}
+	else
+	{
+		zero_packets_counter = 0;
+	}
 }
 
 void Bebop::updateCycle()
@@ -54,22 +77,22 @@ void Bebop::updateCycle()
 
 bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
 {
-
+	return false;
 }
 
 bool Bebop::decodeVideo(cv::Mat &frame)
 {
-
+	return false;
 }
 
 bool Bebop::processCommand(drone::command &command)
 {
-
+	return true;
 }
 
 bool Bebop::processNoCommand()
 {
-
+	return true;
 }
 
 void Bebop::connectionLost()

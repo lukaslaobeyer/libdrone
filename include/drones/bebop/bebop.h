@@ -11,6 +11,7 @@
 #include <boost/asio.hpp>
 
 #include <string>
+#include <memory>
 
 class Bebop : public FPVDrone
 {
@@ -34,7 +35,8 @@ class Bebop : public FPVDrone
 
 	private:
 		std::string _ip;
-		boost::asio::io_service *_io_service = nullptr;
+		std::unique_ptr<bebop::controllink> ctrllink = nullptr;
+		std::unique_ptr<boost::asio::io_service> _io_service = nullptr;
 };
 
 #endif
