@@ -59,7 +59,7 @@ void Bebop::beforeUpdate()
 		if(zero_packets_counter >= 50)
 		{
 			// Definitely lost connection
-			cout << "[WARNING] Lost connection to AR.Drone!" << endl;
+			cout << "[WARNING] Lost connection to Bebop!" << endl;
 
 			markConnectionLost();
 		}
@@ -87,11 +87,14 @@ bool Bebop::decodeVideo(cv::Mat &frame)
 
 bool Bebop::processCommand(drone::command &command)
 {
+	//ctrllink->sendCommand(command);
 	return true;
 }
 
 bool Bebop::processNoCommand()
 {
+	drone::commands::attitude command;
+	//ctrllink->sendCommand(command);
 	return true;
 }
 

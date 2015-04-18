@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	// Do stuff!
 	_drone->startUpdateLoop();
 
-	this_thread::sleep_for(chrono::milliseconds(10000));
+	this_thread::sleep_for(chrono::milliseconds(20000));
 
 	_drone->stopUpdateLoop();
 

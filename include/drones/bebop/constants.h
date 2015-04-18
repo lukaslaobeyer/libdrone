@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include <drones/bebop/types.h>
+
 namespace bebop
 {
 	const std::string DEFAULT_IP   = "192.168.42.1";

@@ -1,5 +1,7 @@
 #include "controllink.h"
 
+#include "protocol.h"
+
 #include <string>
 
 #include <boost/property_tree/ptree.hpp>
@@ -68,11 +70,19 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	boost::property_tree::read_json(discovery_response_buf, discovery_response);
 
 	int c2d_port = discovery_response.get<int>("c2d_port");
-	cout << "C2D port: " << c2d_port << endl;
 	
 	/////// INITIALIZE NAVDATA CONNECTION ///////
-	_navdata_socket.reset(new udp::socket(io_service, udp::v4()));
-	_navdata_socket->bind(udp::endpoint(udp::v4(), bebop::D2C_PORT));
+	_d2c_socket.reset(new udp::socket(io_service, udp::v4()));
+	_d2c_socket->bind(udp::endpoint(udp::v4(), bebop::D2C_PORT));
+
+	/////// INITIALIZE COMMAND CONNECTION ///////
+	udp::resolver c2d_resolver(io_service);
+	udp::resolver::query c2d_query(ip, to_string(c2d_port));
+	udp::endpoint c2d_endpoint = *c2d_resolver.resolve(c2d_query);
+
+	_c2d_socket.reset(new udp::socket(io_service, udp::v4()));
+	_c2d_socket->bind(udp::endpoint(udp::v4(), c2d_port));
+	_c2d_socket->connect(c2d_endpoint);
 
 	// Start receiving packets
 	startReceivingNavdata();
@@ -80,37 +90,60 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 
 void controllink::startReceivingNavdata()
 {
-	_navdata_socket->async_receive_from(boost::asio::buffer(_navdata_receivedDataBuffer), _navdata_sender_endpoint, boost::bind(&controllink::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	_d2c_socket->async_receive_from(boost::asio::buffer(_navdata_receivedDataBuffer), _navdata_sender_endpoint, boost::bind(&controllink::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
-void controllink::navdataPacketReceived(const boost::system::error_code &error, std::size_t bytes_transferred)
+void controllink::navdataPacketReceived(const boost::system::error_code &error, size_t bytes_transferred)
 {
 	if(!error)
 	{
-		//cout << bytes_transferred << endl;
-		cout << hex << (int) _navdata_receivedDataBuffer[0] << " " << (int) _navdata_receivedDataBuffer[1];
-		cout << " " << (int) _navdata_receivedDataBuffer[2] << " " << (int) _navdata_receivedDataBuffer[3] << dec;
+		uint8_t seqNum = _navdata_receivedDataBuffer[2];
 
-		if(_navdata_receivedDataBuffer[0] == 0x2)
+		uint32_t size = (uint32_t)_navdata_receivedDataBuffer[6] << 24 |
+					    (uint32_t)_navdata_receivedDataBuffer[5] << 16 |
+					    (uint32_t)_navdata_receivedDataBuffer[4] << 8  |
+					    (uint32_t)_navdata_receivedDataBuffer[3];
+
+		cout << (int) seqNum << "\t" << size << "\t";
+
+		// Find out type of data (see ARNETWORKAL_Frame.h in libARNetworkAL of the official SDK)
+		switch(_navdata_receivedDataBuffer[0])
 		{
-			if(_navdata_receivedDataBuffer[1] == 0x7f)
+		case frametype::ACK:
+			// Ack packet
+			cout << "ack";
+			break;
+		case frametype::DATA:
+			// Regular data
+			cout << "data";
+
+			switch(_navdata_receivedDataBuffer[1])
 			{
-				if(_navdata_receivedDataBuffer[3] == 0x13)
-				{
-					cout << "\tnavdata";
-				}
-				else if(_navdata_receivedDataBuffer[3] == 0x17)
-				{
-					cout << "\tvideo";
-				}
+			case frameid::PING:
+				// Request for pong packet
+				cout << " ping";
+				sendPong(_navdata_receivedDataBuffer, bytes_transferred);
+				break;
+			case frameid::PONG:
+				// Confirmation that pong packet was received
+				cout << " pong";
+				break;
+			case frameid::NAVDATA:
+				// Navigation data packet
+				cout << " navdata";
+				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
+				break;
 			}
-			else if(_navdata_receivedDataBuffer[1] == 0)
-			{
-				if(_navdata_receivedDataBuffer[3] == 0xF)
-				{
-					cout << "\tping";
-				}
-			}
+
+			break;
+		case frametype::LOW_LATENCY:
+			// Low latency data
+			cout << "low latency data";
+			break;
+		case frametype::DATA_WITH_ACK:
+			// Data with ack
+			cout << "data with ack";
+			break;
 		}
 
 		cout << endl;
@@ -122,4 +155,70 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 
 	// Receive next packet
 	startReceivingNavdata();
+}
+
+void controllink::sendPong(d2cbuffer receivedDataBuffer, size_t bytes_received)
+{
+	_c2d_socket->send(boost::asio::buffer(receivedDataBuffer, bytes_received));
+}
+
+void controllink::sendCommand(vector<char> &command)
+{
+	vector<char> packet;
+	packet.reserve(_command_header.size() + command.size());
+	packet.insert(packet.end(), _command_header.begin(), _command_header.end());
+	packet.insert(packet.end(), command.begin(), command.end());
+
+	_c2d_socket->send(boost::asio::buffer(packet));
+}
+
+void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes_transferred)
+{
+	uint8_t  dataDevice = receivedDataBuffer[7]; // See the XML files in libARCommands of the official SDK
+	uint8_t  dataClass  = receivedDataBuffer[8];
+	uint16_t dataID     = receivedDataBuffer[10] << 8 | receivedDataBuffer[9];
+
+	navdata_id navdata_key{dataDevice, dataClass, dataID};
+
+	if(navdata_key == navdata_ids::wifi_rssi)
+	{
+		cout << "\twifi\t";
+	}
+	else if(navdata_key == navdata_ids::altitude)
+	{
+		cout << "\taltitude\t\t";
+		double altitude;
+		memcpy(&altitude, &_navdata_receivedDataBuffer.data()[11], sizeof(double));
+		cout << altitude;
+	}
+	else if(navdata_key == navdata_ids::attitude)
+	{
+		cout << "\tattitude\t\t";
+		float roll, pitch, yaw;
+		memcpy(&roll, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+		memcpy(&pitch, &_navdata_receivedDataBuffer.data()[11 + 4], sizeof(float));
+		memcpy(&yaw, &_navdata_receivedDataBuffer.data()[11 + 4*2], sizeof(float));
+		cout << roll * (360/(2*3.1416)) << "\t";
+		cout << pitch * (360/(2*3.1416)) << "\t";
+		cout << yaw * (360/(2*3.1416));
+	}
+	else if(navdata_key == navdata_ids::speed)
+	{
+		cout << "\tspeed\t\t\t";
+		float speedX, speedY, speedZ;
+		memcpy(&speedX, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+		memcpy(&speedY, &_navdata_receivedDataBuffer.data()[11 + 4], sizeof(float));
+		memcpy(&speedZ, &_navdata_receivedDataBuffer.data()[11 + 4*2], sizeof(float));
+		cout << speedX << "\t";
+		cout << speedY << "\t";
+		cout << speedZ;
+	}
+	else if(navdata_key == navdata_ids::gps)
+	{
+		cout << "\tgps\t\t\t";
+	}
+	else if(navdata_key == navdata_ids::camera_orientation)
+	{
+		cout << "\tcamera orientation\t";
+	}
 }
