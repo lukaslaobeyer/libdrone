@@ -1,5 +1,7 @@
 #include <drones/bebop/bebop.h>
 
+#include "protocol.h"
+
 using namespace std;
 using boost::asio::ip::tcp;
 
@@ -87,15 +89,30 @@ bool Bebop::decodeVideo(cv::Mat &frame)
 
 bool Bebop::processCommand(drone::command &command)
 {
-	//ctrllink->sendCommand(command);
-	return true;
+	bebop::navdata_id command_id;
+	vector<boost::any> args;
+	bool processed = false;
+
+	switch(command.command)
+	{
+	case drone::commands::id::ATTITUDE:
+		//TODO: this
+		break;
+	}
+
+	if(processed)
+	{
+		ctrllink->sendCommand(command_id, args);  //TODO: Handle exceptions?
+		return true;
+	}
+
+	return false;
 }
 
 bool Bebop::processNoCommand()
 {
-	drone::commands::attitude command;
-	//ctrllink->sendCommand(command);
-	return true;
+	drone::commands::attitude hover;
+	return processCommand(hover);
 }
 
 void Bebop::connectionLost()

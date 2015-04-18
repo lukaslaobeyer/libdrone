@@ -162,14 +162,32 @@ void controllink::sendPong(d2cbuffer receivedDataBuffer, size_t bytes_received)
 	_c2d_socket->send(boost::asio::buffer(receivedDataBuffer, bytes_received));
 }
 
-void controllink::sendCommand(vector<char> &command)
+void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 {
+	static uint8_t seqNum = 0;
+
+	vector<char> command = createCommand(command_id, args);
+
+	frameheaderbuf frameHeaderBuf;
+	frameheader header;
+
+	uint32_t size = frameHeaderBuf.size() + command.size();
+
+	header.type = frametype::DATA;
+	header.id = frameid::COMMAND;
+	header.seq = seqNum;
+	header.size = size;
+
+	frameHeaderBuf = createHeader(header);
+
 	vector<char> packet;
-	packet.reserve(_command_header.size() + command.size());
-	packet.insert(packet.end(), _command_header.begin(), _command_header.end());
+	packet.reserve(size);
+	packet.insert(packet.end(), frameHeaderBuf.begin(), frameHeaderBuf.end());
 	packet.insert(packet.end(), command.begin(), command.end());
 
 	_c2d_socket->send(boost::asio::buffer(packet));
+
+	seqNum++;
 }
 
 void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes_transferred)
@@ -221,4 +239,74 @@ void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes
 	{
 		cout << "\tcamera orientation\t";
 	}
+}
+
+vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::any> &args)
+{
+	vector<char> command = {command_id.dataDevice, command_id.dataClass, command_id.dataID};
+
+	if(command_id.dataTypes.size() != args.size())
+	{
+		throw InvalidCommandException;
+	}
+
+	for(int i = 0; i < command_id.dataTypes.size(); i++) // Add the arguments
+	{
+		if(command_id.dataTypes[i] == "b") // int8_t
+		{
+			int8_t arg = boost::any_cast<int8_t>(args[i]);
+			command.push_back(arg);
+		}
+		else if(command_id.dataTypes[i] == "B") // uint8_t
+		{
+			uint8_t arg = boost::any_cast<uint8_t>(args[i]);
+			command.push_back(arg);
+		}
+		else if(command_id.dataTypes[i] == "h") // int16_t
+		{
+			int16_t arg = boost::any_cast<int16_t>(args[i]);
+			char arg8[2];
+			memcpy(&arg8, &arg, sizeof(int16_t));
+			command.insert(command.end(), {arg8[0], arg8[1]});
+		}
+		else if(command_id.dataTypes[i] == "H") // uint16_t
+		{
+			uint16_t arg = boost::any_cast<uint16_t>(args[i]);
+			char arg8[2];
+			memcpy(&arg8, &arg, sizeof(uint16_t));
+			command.insert(command.end(), {arg8[0], arg8[1]});
+		}
+		else if(command_id.dataTypes[i] == "f") // float
+		{
+			float arg = boost::any_cast<float>(args[i]);
+			char arg8[4];
+			memcpy(&arg8, &arg, sizeof(float));
+			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3]});
+		}
+		else if(command_id.dataTypes[i] == "d") // double
+		{
+			double arg = boost::any_cast<double>(args[i]);
+			char arg8[8];
+			memcpy(&arg8, &arg, sizeof(double));
+			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3], arg8[4], arg8[5], arg8[6], arg8[7]});
+		}
+	}
+
+	return command;
+}
+
+frameheaderbuf controllink::createHeader(frameheader &header)
+{
+	frameheaderbuf buf;
+
+	buf[0] = header.type;
+	buf[1] = header.id;
+	buf[2] = header.seq;
+
+	buf[6] = (uint8_t) header.size;
+    buf[5] = (uint8_t)(header.size>>=8);
+    buf[4] = (uint8_t)(header.size>>=8);
+    buf[3] = (uint8_t)(header.size>>=8);
+
+    return buf;
 }
