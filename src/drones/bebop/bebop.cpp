@@ -114,6 +114,17 @@ bool Bebop::processCommand(drone::command &command)
 			processed = true;
 		}
 		break;
+	case drone::commands::id::TAKEOFF:
+		{
+			command_id = bebop::command_ids::takeoff;
+			processed = true;
+		}
+		break;
+	case drone::commands::id::LAND:
+		{
+			command_id = bebop::command_ids::land;
+			processed = true;
+		}
 	}
 
 	if(processed)

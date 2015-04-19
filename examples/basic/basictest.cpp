@@ -1,5 +1,6 @@
 #include <drones/ardrone2/ardrone2.h>
 #include <drones/bebop/bebop.h>
+#include <commands.h>
 
 #include <iostream>
 #include <memory>
@@ -98,7 +99,12 @@ int main(int argc, char **argv)
 	}
 	else // Flying is allowed. Take off, wait 6 seconds and land.
 	{
-		
+		drone::command takeOff = drone::commands::takeoff();
+		drone::command land = drone::commands::land();
+
+		_drone->addCommand(takeOff);
+		this_thread::sleep_for(chrono::milliseconds(6000));
+		_drone->addCommand(land);
 	}
 
 	_drone->stopUpdateLoop();
