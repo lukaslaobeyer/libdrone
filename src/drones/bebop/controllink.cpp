@@ -1,7 +1,5 @@
 #include "controllink.h"
 
-#include "protocol.h"
-
 #include <string>
 
 #include <boost/property_tree/ptree.hpp>
@@ -86,6 +84,17 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 
 	// Start receiving packets
 	startReceivingNavdata();
+/*
+	// Flat trim
+	navdata_id flattrim_id = command_ids::flattrim;
+	vector<boost::any> ft_args = {};
+	sendCommand(flattrim_id, ft_args);
+
+	// Enable video
+	navdata_id videoen_id = command_ids::enable_streaming;
+	vector<boost::any> vid_args = {(uint8_t) 1};
+	sendCommand(videoen_id, vid_args);
+*/
 }
 
 void controllink::startReceivingNavdata()
@@ -99,10 +108,8 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 	{
 		uint8_t seqNum = _navdata_receivedDataBuffer[2];
 
-		uint32_t size = (uint32_t)_navdata_receivedDataBuffer[6] << 24 |
-					    (uint32_t)_navdata_receivedDataBuffer[5] << 16 |
-					    (uint32_t)_navdata_receivedDataBuffer[4] << 8  |
-					    (uint32_t)_navdata_receivedDataBuffer[3];
+		uint32_t size;
+		memcpy(&size, &_navdata_receivedDataBuffer[3], sizeof(uint32_t));
 
 		cout << (int) seqNum << "\t" << size << "\t";
 
@@ -111,11 +118,11 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 		{
 		case frametype::ACK:
 			// Ack packet
-			cout << "ack";
+			cout << "  ack";
 			break;
 		case frametype::DATA:
 			// Regular data
-			cout << "data";
+			cout << " data";
 
 			switch(_navdata_receivedDataBuffer[1])
 			{
@@ -142,7 +149,14 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 			break;
 		case frametype::DATA_WITH_ACK:
 			// Data with ack
-			cout << "data with ack";
+			cout << "ack'd";
+			if(frameid::NAVDATA_WITH_ACK == _navdata_receivedDataBuffer[1])
+			{
+				cout << " navdata";
+				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
+				sendAck(_navdata_receivedDataBuffer, bytes_transferred);
+				cout << " [ack'd!]";
+			}
 			break;
 		}
 
@@ -159,31 +173,43 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 
 void controllink::sendPong(d2cbuffer receivedDataBuffer, size_t bytes_received)
 {
+	// Send a "pong" packet as reply to a ping packet. Contents are a copy of the ping packet.
 	_c2d_socket->send(boost::asio::buffer(receivedDataBuffer, bytes_received));
+}
+
+void controllink::sendAck(d2cbuffer receivedDataBuffer, size_t bytes_received)
+{
+	// Send an acknowledge message to signal that packet was received. Only required for special packets with frame type frametype::DATA_WITH_ACK.
+
+	static uint8_t seqNum = 0;
+
+	frameheader header;
+	header.type = frametype::ACK;
+	header.id = frameid::ACK_RESPONSE;
+	header.seq = seqNum;
+
+	vector<char> payload = {_navdata_receivedDataBuffer[2]}; // Single byte as payload containing the sequence number of the received frame requesting ack
+	vector<char> packet = assemblePacket(header, payload);
+
+	_c2d_socket->send(boost::asio::buffer(packet));
+
+	seqNum++;
 }
 
 void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 {
+	// Send a command. The command_id is combined with the packet header to form a command header, then data is extracted from the
+	// arguments passed with &args and sent to the c2d port.
+
 	static uint8_t seqNum = 0;
 
-	vector<char> command = createCommand(command_id, args);
-
-	frameheaderbuf frameHeaderBuf;
 	frameheader header;
-
-	uint32_t size = frameHeaderBuf.size() + command.size();
-
 	header.type = frametype::DATA;
 	header.id = frameid::COMMAND;
 	header.seq = seqNum;
-	header.size = size;
 
-	frameHeaderBuf = createHeader(header);
-
-	vector<char> packet;
-	packet.reserve(size);
-	packet.insert(packet.end(), frameHeaderBuf.begin(), frameHeaderBuf.end());
-	packet.insert(packet.end(), command.begin(), command.end());
+	vector<char> command = createCommand(command_id, args);
+	vector<char> packet = assemblePacket(header, command);
 
 	_c2d_socket->send(boost::asio::buffer(packet));
 
@@ -239,51 +265,65 @@ void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes
 	{
 		cout << "\tcamera orientation\t";
 	}
+	else if(navdata_key == navdata_ids::flattrim)
+	{
+		cout << "\tflat trim ack'd\t";
+	}
+	else if(navdata_key == navdata_ids::streaming_state)
+	{
+		cout << "\tstreaming state changed\t";
+	}
+	else
+	{
+		cout << "\tUNKNOWN\t";
+	}
 }
 
 vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::any> &args)
 {
-	vector<char> command = {command_id.dataDevice, command_id.dataClass, command_id.dataID};
+	char dataID[2];
+	memcpy(dataID, &command_id.dataID, sizeof(uint16_t));
+	vector<char> command = {(char) command_id.dataDevice, (char) command_id.dataClass, dataID[0], dataID[1]};
 
 	if(command_id.dataTypes.size() != args.size())
 	{
-		throw InvalidCommandException;
+		throw InvalidCommandException();
 	}
 
 	for(int i = 0; i < command_id.dataTypes.size(); i++) // Add the arguments
 	{
-		if(command_id.dataTypes[i] == "b") // int8_t
+		if(command_id.dataTypes[i] == 'b') // int8_t
 		{
 			int8_t arg = boost::any_cast<int8_t>(args[i]);
 			command.push_back(arg);
 		}
-		else if(command_id.dataTypes[i] == "B") // uint8_t
+		else if(command_id.dataTypes[i] == 'B') // uint8_t
 		{
 			uint8_t arg = boost::any_cast<uint8_t>(args[i]);
 			command.push_back(arg);
 		}
-		else if(command_id.dataTypes[i] == "h") // int16_t
+		else if(command_id.dataTypes[i] == 'h') // int16_t
 		{
 			int16_t arg = boost::any_cast<int16_t>(args[i]);
 			char arg8[2];
 			memcpy(&arg8, &arg, sizeof(int16_t));
 			command.insert(command.end(), {arg8[0], arg8[1]});
 		}
-		else if(command_id.dataTypes[i] == "H") // uint16_t
+		else if(command_id.dataTypes[i] == 'H') // uint16_t
 		{
 			uint16_t arg = boost::any_cast<uint16_t>(args[i]);
 			char arg8[2];
 			memcpy(&arg8, &arg, sizeof(uint16_t));
 			command.insert(command.end(), {arg8[0], arg8[1]});
 		}
-		else if(command_id.dataTypes[i] == "f") // float
+		else if(command_id.dataTypes[i] == 'f') // float
 		{
 			float arg = boost::any_cast<float>(args[i]);
 			char arg8[4];
 			memcpy(&arg8, &arg, sizeof(float));
 			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3]});
 		}
-		else if(command_id.dataTypes[i] == "d") // double
+		else if(command_id.dataTypes[i] == 'd') // double
 		{
 			double arg = boost::any_cast<double>(args[i]);
 			char arg8[8];
@@ -303,10 +343,29 @@ frameheaderbuf controllink::createHeader(frameheader &header)
 	buf[1] = header.id;
 	buf[2] = header.seq;
 
-	buf[6] = (uint8_t) header.size;
-    buf[5] = (uint8_t)(header.size>>=8);
+	buf[3] = (uint8_t) header.size;
     buf[4] = (uint8_t)(header.size>>=8);
-    buf[3] = (uint8_t)(header.size>>=8);
+    buf[5] = (uint8_t)(header.size>>=8);
+    buf[6] = (uint8_t)(header.size>>=8);
 
     return buf;
+}
+
+vector<char> controllink::assemblePacket(frameheader &header, vector<char> &payload)
+{
+	// Assemble a complete packet from the provided frameheader (size not required, will be calculated by this function) and payload
+
+	frameheaderbuf frameHeaderBuf;
+
+	uint32_t size = frameHeaderBuf.size() + payload.size(); // Calculate and set size
+	header.size = size;
+
+	frameHeaderBuf = createHeader(header);
+
+	vector<char> packet;
+	packet.reserve(size);
+	packet.insert(packet.end(), frameHeaderBuf.begin(), frameHeaderBuf.end());
+	packet.insert(packet.end(), payload.begin(), payload.end());
+
+	return packet;
 }

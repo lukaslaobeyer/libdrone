@@ -188,6 +188,7 @@ bool ARDrone2::processCommand(drone::command &command)
             float yaw = applyLimit(attitude(2), limits.yawspeed); // yawspeed
             float gaz = applyLimit(vspeed, limits.vspeed); // vspeed
 
+            //TODO: convert to value between -1 and 1
             _latestAttitudeCommand = AttitudeCommand(phi, theta, gaz, yaw);
 
     		_commandqueue.push_back(_latestAttitudeCommand);

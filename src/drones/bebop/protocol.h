@@ -56,6 +56,8 @@ namespace bebop
 		const uint8_t PING = 0;
 		const uint8_t PONG = 1;
 		const uint8_t NAVDATA = 0x7f;
+		const uint8_t NAVDATA_WITH_ACK = 0x7e;
+		const uint8_t ACK_RESPONSE = 0xFE;
 		const uint8_t COMMAND = 10;
 	}
 
@@ -77,6 +79,8 @@ namespace bebop
 
 		const navdata_id picture_taken{1, 8, 0, "B"}; // 1 if picture taken
 		const navdata_id video_recording_state{1, 8, 1, "B"}; //TODO: decode state
+
+		const navdata_id streaming_state{1, 22, 0, "B"}; // 0: enabled; 1: disabled; 2: error TODO: verify
 
 		const navdata_id max_altitude{1, 6, 0, "fff"}; // current, min, max in m
 		const navdata_id max_tilt{1, 6, 1, "fff"}; // current, min, max in deg

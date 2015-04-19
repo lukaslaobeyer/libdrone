@@ -1,6 +1,7 @@
 #include <drones/bebop/bebop.h>
 
 #include "protocol.h"
+#include "commandcomposer.h"
 
 using namespace std;
 using boost::asio::ip::tcp;
@@ -96,7 +97,22 @@ bool Bebop::processCommand(drone::command &command)
 	switch(command.command)
 	{
 	case drone::commands::id::ATTITUDE:
-		//TODO: this
+		{
+			Eigen::Vector3f attitude = boost::any_cast<Eigen::Vector3f>(command.parameters[0]);
+			float vspeed = boost::any_cast<float>(command.parameters[1]);
+
+			drone::limits limits = getLimits();
+
+			float pitch = applyLimit(attitude(0), limits.angle); // pitch
+			float roll = applyLimit(attitude(1), limits.angle); // roll
+			float yaw = applyLimit(attitude(2), limits.yawspeed); // yawspeed
+			float gaz = applyLimit(vspeed, limits.vspeed); // vspeed
+
+			command_id = bebop::command_ids::pcmd;
+			args = bebop::commands::create::pcmd(roll, pitch, yaw, gaz, limits);
+
+			processed = true;
+		}
 		break;
 	}
 

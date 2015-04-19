@@ -7,6 +7,8 @@
 #include <types.h>
 #include <commands.h>
 
+#include "protocol.h"
+
 #include <memory>
 #include <array>
 #include <vector>
@@ -36,15 +38,16 @@ namespace bebop
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args);
 
 			static std::vector<char> createCommand(navdata_id &command_id, std::vector<boost::any> &args);
+			static frameheaderbuf createHeader(frameheader &header);
+			static std::vector<char> assemblePacket(frameheader &header, std::vector<char> &payload);
 		private:
 			void startReceivingNavdata();
 			void navdataPacketReceived(const boost::system::error_code &error, std::size_t bytes_transferred);
 
 			void sendPong(d2cbuffer receivedDataBuffer, std::size_t bytes_transferred);
+			void sendAck(d2cbuffer receivedDataBuffer, size_t bytes_received);
 
 			void decodeNavdataPacket(d2cbuffer receivedDataBuffer, std::size_t bytes_transferred);
-
-			frameheaderbuf createHeader(frameheader &header);
 
 		    std::unique_ptr<boost::asio::ip::udp::socket> _d2c_socket = nullptr;
 		    std::unique_ptr<boost::asio::ip::udp::socket> _c2d_socket = nullptr;
