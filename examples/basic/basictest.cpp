@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 	// Check arguments and decide which drone to use (Bebop or AR.Drone 2.0)
 	if(argc < 2)
 	{
-		cout << "Usage: " << argv[0] << " [Bebop|ARDrone2]" << endl;
+		cout << "Usage: " << argv[0] << " [Bebop|ARDrone2] <fly>" << endl;
 		return -1;
 	}
 	if(strcmp(argv[1], "Bebop") == 0)
@@ -49,6 +49,17 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	bool fly = false;
+
+	if(argc >= 3)
+	{
+		if(strcmp(argv[2], "fly") == 0)
+		{
+			fly = true;
+			cout << "[INFO]  Drone will perform autonomous take off and landing!" << endl;
+		}
+	}
+
 	cout << "[INFO]  Using drone " << argv[1] << "." << endl;
 
 	// Setup drone and connect
@@ -59,9 +70,6 @@ int main(int argc, char **argv)
 	else
 	{
 		_drone.reset(new Bebop());
-//		_drone->connect();
-//		this_thread::sleep_for(chrono::milliseconds(1000));
-//		return 1;
 	}
 
 	NavdataListener listener;
@@ -84,7 +92,14 @@ int main(int argc, char **argv)
 	// Do stuff!
 	_drone->startUpdateLoop();
 
-	this_thread::sleep_for(chrono::milliseconds(20000));
+	if(!fly) // Not allowed to fly.
+	{
+		this_thread::sleep_for(chrono::milliseconds(20000));
+	}
+	else // Flying is allowed. Take off, wait 6 seconds and land.
+	{
+		
+	}
 
 	_drone->stopUpdateLoop();
 
