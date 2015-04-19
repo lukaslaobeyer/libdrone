@@ -19,7 +19,7 @@ controllink::controllink()
 void controllink::init(string ip, boost::asio::io_service &io_service)
 {
 	/////// INITIALIZE BEBOP CONNECTION ///////
-	
+
 	// Bebop discovery connection
 	tcp::resolver discovery_resolver(io_service);
 	tcp::resolver::query discovery_query(ip, to_string(bebop::DISCOVERY_PORT));
@@ -68,7 +68,7 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	boost::property_tree::read_json(discovery_response_buf, discovery_response);
 
 	int c2d_port = discovery_response.get<int>("c2d_port");
-	
+
 	/////// INITIALIZE NAVDATA CONNECTION ///////
 	_d2c_socket.reset(new udp::socket(io_service, udp::v4()));
 	_d2c_socket->bind(udp::endpoint(udp::v4(), bebop::D2C_PORT));
@@ -95,6 +95,9 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	vector<boost::any> vid_args = {(uint8_t) 1};
 	sendCommand(videoen_id, vid_args);
 */
+	navdata_id autotakeoff_id = command_ids::autotakeoff;
+	vector<boost::any> takeoff_args = {(uint8_t) 1};
+	sendCommand(autotakeoff_id, takeoff_args);
 }
 
 void controllink::startReceivingNavdata()
@@ -227,12 +230,21 @@ void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes
 	if(navdata_key == navdata_ids::wifi_rssi)
 	{
 		cout << "\twifi\t";
+		int16_t wifi_rssi;
+		memcpy(&wifi_rssi, &_navdata_receivedDataBuffer.data()[11], sizeof(wifi_rssi));
+		cout << (int) wifi_rssi << "dBm";
+	}
+	else if(navdata_key == navdata_ids::battery_status)
+	{
+		cout << "\tbattery charge\t\t";
+		uint8_t battery_percentage = _navdata_receivedDataBuffer[11];
+		cout << (int) battery_percentage << "%";
 	}
 	else if(navdata_key == navdata_ids::altitude)
 	{
 		cout << "\taltitude\t\t";
 		double altitude;
-		memcpy(&altitude, &_navdata_receivedDataBuffer.data()[11], sizeof(double));
+		memcpy(&altitude, &_navdata_receivedDataBuffer.data()[11], sizeof(double));	memcpy(&altitude, &_navdata_receivedDataBuffer.data()[11], sizeof(double));
 		cout << altitude;
 	}
 	else if(navdata_key == navdata_ids::attitude)
@@ -273,9 +285,17 @@ void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes
 	{
 		cout << "\tstreaming state changed\t";
 	}
+	else if(navdata_key == navdata_ids::flying_state)
+	{
+		cout << "\tflying state changed\t";
+	}
+	else if(navdata_key == navdata_ids::alert_state)
+	{
+		cout << "\talert state changed\t";
+	}
 	else
 	{
-		cout << "\tUNKNOWN\t";
+		cout << "\tUNKNOWN: " << (int) dataDevice << "; " << (int) dataClass << ";" << (int) dataID << "\t";
 	}
 }
 

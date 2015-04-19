@@ -8,7 +8,7 @@ using boost::asio::ip::udp;
 
 ControlLink::ControlLink()
 {
-	
+
 }
 
 ControlLink::~ControlLink()
@@ -24,7 +24,7 @@ void ControlLink::init(std::string ip, boost::asio::io_service &io_service)
 	udp::resolver resolver(io_service);
 	udp::resolver::query query(udp::v4(), ip, to_string(ardrone2::CONTROL_PORT));
 	udp::endpoint receiver_endpoint = *resolver.resolve(query);
-	
+
 	socket = new udp::socket(io_service);
 	socket->open(udp::v4());
 	socket->bind(udp::endpoint(udp::v4(), ardrone2::CONTROL_PORT));
@@ -42,35 +42,26 @@ void ControlLink::sendATCommands(vector<ATCommand> cmds)
 {
 	if(socket)
 	{
-		stringbuf buf;
-		
-		const char* AT = "AT*";
-		
+		stringstream buf;
+
 		for(unsigned int i = 0; i < cmds.size(); i++)
 		{
-			const char* command = cmds[i].getCommand().c_str();
+			buf << "AT*";
+			buf << cmds[i].getCommand();
+			buf << '=';
+			buf << to_string(seqNum);
 
-			string seqNum_str = to_string(seqNum);
-			const char* seqNum_c = seqNum_str.c_str();
-			
-			buf.sputn(AT, 3);
-			buf.sputn(command, strlen(command));
-			buf.sputc('=');
-			buf.sputn(seqNum_c, strlen(seqNum_c));
-			
 			for(unsigned int j = 0; j < cmds[i].getParameters().size(); j++)
 			{
-				const char* param = cmds[i].getParameters()[j].c_str();
-				
-				buf.sputc(',');
-				buf.sputn(param, strlen(param));
+				buf << ',';
+				buf << cmds[i].getParameters()[j];
 			}
-			
-			buf.sputc('\r');
-			
+
+			buf << '\r';
+
 			seqNum++;
 		}
-		
+
 		socket->send(boost::asio::buffer(buf.str()));
 	}
 	else

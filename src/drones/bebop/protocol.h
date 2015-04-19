@@ -64,6 +64,7 @@ namespace bebop
 	namespace navdata_ids
 	{
 		const navdata_id wifi_rssi{0, 5, 7, "h"}; // in dBm
+		const navdata_id battery_status{0, 5, 1, "B"}; // Battery charge percentage
 
 		const navdata_id altitude{1, 4, 8, "d"}; // in meters
 		const navdata_id attitude{1, 4, 6, "fff"}; // roll, pitch, yaw
@@ -107,6 +108,7 @@ namespace bebop
 		const navdata_id land{1, 0, 3, ""};
 		const navdata_id emergency{1, 0, 4, ""};
 		const navdata_id navigatehome{1, 0, 5, "B"}; // 1 to navigate home, 0 to stop navigating autonomously
+		const navdata_id autotakeoff{1, 0, 6, "B"}; // 1 to enable automatic takeoff, 0 to disable
 
 		const navdata_id flip{1, 5, 0, "B"}; //TODO: direction of flip (probably 0: front; 1: back; 2: right; 3: left)
 

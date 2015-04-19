@@ -35,7 +35,7 @@ drone::limits ARDrone2::getLimits()
 {
     //TODO: this
     drone::limits limits;
-    
+
     return limits;
 }
 
@@ -214,7 +214,7 @@ bool ARDrone2::processCommand(drone::command &command)
 	        _commandqueue.push_back(TakeOffCommand());
 	    }
 	    break;
-	// AR.Drone 2.0 specific commands:  
+	// AR.Drone 2.0 specific commands:
 	case ardrone2::commands::id::MAGNETOCALIB:
 	    {
 	        _commandqueue.push_back(MagnetometerCalibrationCommand());
@@ -224,14 +224,14 @@ bool ARDrone2::processCommand(drone::command &command)
 	    {
 	        string key = boost::any_cast<string>(command.parameters[0]);
 	        string value = boost::any_cast<string>(command.parameters[1]);
-	    
+
 	        _commandqueue.push_back(ConfigCommand(key, value));
 	    }
 	    break;
 	case ardrone2::commands::id::RECORDONUSB:
 	    {
 	        bool record = boost::any_cast<bool>(command.parameters[0]);
-	    
+
 	        _commandqueue.push_back(RecordOnUSBCommand(record));
 	    }
 	    break;

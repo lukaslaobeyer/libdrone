@@ -102,9 +102,12 @@ int main(int argc, char **argv)
 		drone::command takeOff = drone::commands::takeoff();
 		drone::command land = drone::commands::land();
 
+		cout << "[INFO]  Taking off" << endl;
 		_drone->addCommand(takeOff);
 		this_thread::sleep_for(chrono::milliseconds(6000));
 		_drone->addCommand(land);
+		cout << "[INFO]  Landing" << endl;
+		this_thread::sleep_for(chrono::milliseconds(1000));
 	}
 
 	_drone->stopUpdateLoop();
