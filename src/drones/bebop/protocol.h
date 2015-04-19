@@ -58,7 +58,9 @@ namespace bebop
 		const uint8_t NAVDATA = 0x7f;
 		const uint8_t NAVDATA_WITH_ACK = 0x7e;
 		const uint8_t ACK_RESPONSE = 0xFE;
+		const uint8_t VIDEO_ACK_RESPONSE = 13;
 		const uint8_t COMMAND = 10;
+		const uint8_t VIDEO_WITH_ACK = 0x7D;
 	}
 
 	namespace navdata_ids
@@ -74,14 +76,14 @@ namespace bebop
 		const navdata_id camera_orientation{1, 25, 0, "bb"}; // tilt and pan in range [-100:100]
 
 		const navdata_id flattrim{1, 4, 0, ""};
-		const navdata_id flying_state{1, 4, 1, "B"}; //TODO: decode states
+		const navdata_id flying_state{1, 4, 1, "B"}; // 0: landed; 1: taking off; 2: hovering; 3: flying; 4: landing; 5: emergency
 		const navdata_id alert_state{1, 4, 2, "B"};
 		const navdata_id homenavigation_state{1, 4, 3, "B"};
 
 		const navdata_id picture_taken{1, 8, 0, "B"}; // 1 if picture taken
 		const navdata_id video_recording_state{1, 8, 1, "B"}; //TODO: decode state
 
-		const navdata_id streaming_state{1, 22, 0, "B"}; // 0: enabled; 1: disabled; 2: error TODO: verify
+		const navdata_id streaming_state{1, 22, 0, "B"}; // 0: enabled; 1: disabled; 2: error
 
 		const navdata_id max_altitude{1, 6, 0, "fff"}; // current, min, max in m
 		const navdata_id max_tilt{1, 6, 1, "fff"}; // current, min, max in deg
@@ -102,6 +104,9 @@ namespace bebop
 
 	namespace command_ids
 	{
+		const navdata_id getsettings{0, 2, 0, ""}; // Tell the drone to send back all settings
+		const navdata_id getstatus{0, 4, 0, ""}; // Tell the drone to send back all status information (battery charge, flying state, etc.)
+
 		const navdata_id flattrim{1, 0, 0, ""};
 		const navdata_id takeoff{1, 0, 1, ""};
 		const navdata_id pcmd{1, 0, 2, "Bbbbbf"}; // 1: 1 to activate roll/pitch movement; 2-5: roll, pitch, yaw, gaz in range [-100:100]; 6: unused

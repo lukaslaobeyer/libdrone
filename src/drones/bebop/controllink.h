@@ -44,16 +44,20 @@ namespace bebop
 			void startReceivingNavdata();
 			void navdataPacketReceived(const boost::system::error_code &error, std::size_t bytes_transferred);
 
-			void sendPong(d2cbuffer receivedDataBuffer, std::size_t bytes_transferred);
-			void sendAck(d2cbuffer receivedDataBuffer, size_t bytes_received);
+			void sendPong(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
+			void sendAck(d2cbuffer &receivedDataBuffer, size_t bytes_received);
+			void sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_received);
 
-			void decodeNavdataPacket(d2cbuffer receivedDataBuffer, std::size_t bytes_transferred);
+			void decodeNavdataPacket(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
+			void decodeVideoPacket(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
 
 		    std::unique_ptr<boost::asio::ip::udp::socket> _d2c_socket = nullptr;
 		    std::unique_ptr<boost::asio::ip::udp::socket> _c2d_socket = nullptr;
 		    
 		    boost::asio::ip::udp::endpoint _navdata_sender_endpoint;
     		d2cbuffer _navdata_receivedDataBuffer;
+
+    		//std::array<std::array<char, BEBOP_NAVDATA_BUFFER_SIZE>, 128>
 	};
 }
 

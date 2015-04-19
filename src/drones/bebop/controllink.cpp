@@ -5,6 +5,9 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <thread>
+#include <chrono>
+
 using namespace bebop;
 
 using namespace std;
@@ -84,20 +87,24 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 
 	// Start receiving packets
 	startReceivingNavdata();
-/*
+
+	/*
 	// Flat trim
 	navdata_id flattrim_id = command_ids::flattrim;
 	vector<boost::any> ft_args = {};
-	sendCommand(flattrim_id, ft_args);
-
+	sendCommand(flattrim_id, ft_args);*/
+	/*
 	// Enable video
 	navdata_id videoen_id = command_ids::enable_streaming;
 	vector<boost::any> vid_args = {(uint8_t) 1};
-	sendCommand(videoen_id, vid_args);
-*/
+	sendCommand(videoen_id, vid_args);*/
+	/*
 	navdata_id autotakeoff_id = command_ids::autotakeoff;
 	vector<boost::any> takeoff_args = {(uint8_t) 1};
-	sendCommand(autotakeoff_id, takeoff_args);
+	sendCommand(autotakeoff_id, takeoff_args);*/
+	navdata_id getstatus_id = command_ids::getstatus;
+	vector<boost::any> gs_args = {};
+	sendCommand(getstatus_id, gs_args);
 }
 
 void controllink::startReceivingNavdata()
@@ -143,22 +150,38 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 				cout << " navdata";
 				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
+			default:
+				cout << " UNKNOWN ID";
+				break;
 			}
 
 			break;
 		case frametype::LOW_LATENCY:
 			// Low latency data
-			cout << "low latency data";
+			cout << "low latency data\t";
+			switch(_navdata_receivedDataBuffer[1])
+			{
+			case frameid::VIDEO_WITH_ACK:
+				cout << "ack'd video";
+				decodeVideoPacket(_navdata_receivedDataBuffer, bytes_transferred);
+				sendVideoAck(_navdata_receivedDataBuffer, bytes_transferred);
+				break;
+			default:
+				cout << "UNKNOWN ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
+			}
 			break;
 		case frametype::DATA_WITH_ACK:
 			// Data with ack
 			cout << "ack'd";
-			if(frameid::NAVDATA_WITH_ACK == _navdata_receivedDataBuffer[1])
+			switch(_navdata_receivedDataBuffer[1])
 			{
+			case frameid::NAVDATA_WITH_ACK:
 				cout << " navdata";
 				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				sendAck(_navdata_receivedDataBuffer, bytes_transferred);
-				cout << " [ack'd!]";
+				break;
+			default:
+				cout << "UNKNOWN ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
 			}
 			break;
 		}
@@ -174,13 +197,13 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 	startReceivingNavdata();
 }
 
-void controllink::sendPong(d2cbuffer receivedDataBuffer, size_t bytes_received)
+void controllink::sendPong(d2cbuffer &receivedDataBuffer, size_t bytes_received)
 {
 	// Send a "pong" packet as reply to a ping packet. Contents are a copy of the ping packet.
 	_c2d_socket->send(boost::asio::buffer(receivedDataBuffer, bytes_received));
 }
 
-void controllink::sendAck(d2cbuffer receivedDataBuffer, size_t bytes_received)
+void controllink::sendAck(d2cbuffer &receivedDataBuffer, size_t bytes_received)
 {
 	// Send an acknowledge message to signal that packet was received. Only required for special packets with frame type frametype::DATA_WITH_ACK.
 
@@ -192,6 +215,56 @@ void controllink::sendAck(d2cbuffer receivedDataBuffer, size_t bytes_received)
 	header.seq = seqNum;
 
 	vector<char> payload = {_navdata_receivedDataBuffer[2]}; // Single byte as payload containing the sequence number of the received frame requesting ack
+	vector<char> packet = assemblePacket(header, payload);
+
+	_c2d_socket->send(boost::asio::buffer(packet));
+
+	seqNum++;
+}
+
+void controllink::sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_received)
+{
+	// Send an acknowledge message to signal that a video fragment was received.
+
+	static uint8_t seqNum = 0;
+
+	static uint16_t lastFrameIndex = 0;
+	static uint64_t highPacketsAck = 0, lowPacketsAck = 0;
+
+	// Calculate ack packet payload contents
+	uint16_t frameIndex;
+	memcpy(&frameIndex, &receivedDataBuffer[7], sizeof(uint16_t));
+	uint8_t frameFlags = receivedDataBuffer[9];
+	uint8_t fragmentIndex = receivedDataBuffer[10];
+	uint8_t fragmentsInFrame = receivedDataBuffer[11];
+
+	if(frameIndex != lastFrameIndex) // The fragment to be acked is not part of the frame the previous fragment belonged to
+	{
+		highPacketsAck = 0;
+		lowPacketsAck = 0;
+		lastFrameIndex = frameIndex;
+	}
+
+	if(fragmentsInFrame < 64) // Calculate ack bitmasks
+	{
+		lowPacketsAck |= (1<<fragmentIndex);
+	}
+	else
+	{
+		highPacketsAck |= (1<<(fragmentIndex-64));
+	}
+
+	// Prepare the packet for sending
+	frameheader header;
+	header.type = frametype::DATA;
+	header.id = frameid::VIDEO_ACK_RESPONSE;
+	header.seq = seqNum;
+
+	vector<char> payload(sizeof(uint16_t) + 2*sizeof(uint64_t));
+	memcpy(&payload.data()[0], &frameIndex, sizeof(uint16_t));
+	memcpy(&payload.data()[2], &highPacketsAck, sizeof(uint64_t));
+	memcpy(&payload.data()[10], &lowPacketsAck, sizeof(uint64_t));
+
 	vector<char> packet = assemblePacket(header, payload);
 
 	_c2d_socket->send(boost::asio::buffer(packet));
@@ -219,7 +292,7 @@ void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 	seqNum++;
 }
 
-void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes_transferred)
+void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
 {
 	uint8_t  dataDevice = receivedDataBuffer[7]; // See the XML files in libARCommands of the official SDK
 	uint8_t  dataClass  = receivedDataBuffer[8];
@@ -229,10 +302,10 @@ void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes
 
 	if(navdata_key == navdata_ids::wifi_rssi)
 	{
-		cout << "\twifi\t";
+		cout << "\twifi\t\t\t";
 		int16_t wifi_rssi;
 		memcpy(&wifi_rssi, &_navdata_receivedDataBuffer.data()[11], sizeof(wifi_rssi));
-		cout << (int) wifi_rssi << "dBm";
+		cout << (int) wifi_rssi << "dBm\t" << (int) (2*(wifi_rssi+100)) << "%"; // Percentage according to Microsoft
 	}
 	else if(navdata_key == navdata_ids::battery_status)
 	{
@@ -272,10 +345,20 @@ void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes
 	else if(navdata_key == navdata_ids::gps)
 	{
 		cout << "\tgps\t\t\t";
+		double lat, lon, alt;
+		memcpy(&lat, &_navdata_receivedDataBuffer.data()[11], sizeof(double));
+		memcpy(&lon, &_navdata_receivedDataBuffer.data()[11 + 8], sizeof(double));
+		memcpy(&alt, &_navdata_receivedDataBuffer.data()[11 + 8*2], sizeof(double));
+		cout << lat << "\t";
+		cout << lon << "\t";
+		cout << alt;
 	}
 	else if(navdata_key == navdata_ids::camera_orientation)
 	{
 		cout << "\tcamera orientation\t";
+		int8_t tilt = _navdata_receivedDataBuffer[11];
+		int8_t pan = _navdata_receivedDataBuffer[12];
+		cout << (int) tilt << "\t" << (int) pan;
 	}
 	else if(navdata_key == navdata_ids::flattrim)
 	{
@@ -284,19 +367,36 @@ void controllink::decodeNavdataPacket(d2cbuffer receivedDataBuffer, size_t bytes
 	else if(navdata_key == navdata_ids::streaming_state)
 	{
 		cout << "\tstreaming state changed\t";
+		uint8_t state = _navdata_receivedDataBuffer[11];
+		cout << (int) state;
 	}
 	else if(navdata_key == navdata_ids::flying_state)
 	{
 		cout << "\tflying state changed\t";
+		uint8_t state = _navdata_receivedDataBuffer[11];
+		cout << (int) state;
 	}
 	else if(navdata_key == navdata_ids::alert_state)
 	{
 		cout << "\talert state changed\t";
+		uint8_t state = _navdata_receivedDataBuffer[11];
+		cout << (int) state;
 	}
 	else
 	{
-		cout << "\tUNKNOWN: " << (int) dataDevice << "; " << (int) dataClass << ";" << (int) dataID << "\t";
+		cout << "\tUNKNOWN: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID << "\t";
 	}
+}
+
+void controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
+{
+	uint16_t frameIndex;
+	memcpy(&frameIndex, &receivedDataBuffer[7], sizeof(uint16_t));
+	uint8_t frameFlags = receivedDataBuffer[9];
+	uint8_t fragmentIndex = receivedDataBuffer[10];
+	uint8_t fragmentsInFrame = receivedDataBuffer[11];
+
+	cout << "\t" << (int) frameIndex << "\t" << (int) frameFlags << "\t" << (int) fragmentIndex << "\t" << (int) fragmentsInFrame;
 }
 
 vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::any> &args)
