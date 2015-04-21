@@ -162,6 +162,9 @@ void videodecoder::decodeFrame(int frameSize)
 
 		// OpenCV Mat from BGR data
 		_frame = cv::Mat(_frame_yuv->height, _frame_yuv->width, CV_8UC3, _frame_bgr->data[0]);
+
+		//cv::imshow("Hello!", _frame);
+		//cv::waitKey(1);
 	}
 	else
 	{
