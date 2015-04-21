@@ -34,8 +34,8 @@ drone::connectionstatus Bebop::tryConnecting()
 			_io_service.reset(new boost::asio::io_service);
 		}
 
-		ctrllink.reset(new bebop::controllink);
-		ctrllink->init(_ip, *_io_service);
+		_ctrllink.reset(new bebop::controllink);
+		_ctrllink->init(_ip, *_io_service);
 
 		return drone::connectionstatus::CONNECTION_ESTABLISHED;
 	}
@@ -80,12 +80,14 @@ void Bebop::updateCycle()
 
 bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
 {
-	return false;
+	navdata = _ctrllink->getNavdata();
+	return true;
 }
 
 bool Bebop::decodeVideo(cv::Mat &frame)
 {
-	return false;
+	frame = _ctrllink->getVideoFrame();
+	return true;
 }
 
 bool Bebop::processCommand(drone::command &command)
@@ -129,7 +131,7 @@ bool Bebop::processCommand(drone::command &command)
 
 	if(processed)
 	{
-		ctrllink->sendCommand(command_id, args);  //TODO: Handle exceptions?
+		_ctrllink->sendCommand(command_id, args);  //TODO: Handle exceptions?
 		return true;
 	}
 

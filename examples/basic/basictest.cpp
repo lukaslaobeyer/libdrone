@@ -22,8 +22,20 @@ class NavdataListener : public INavdataListener
 {
 	public:
 	void navdataAvailable(std::shared_ptr<const drone::navdata> navdata)
-	{
-		cout << "Altitude: " << static_pointer_cast<const ardrone2::navdata>(navdata)->altitude << "m" << endl;
+	{/*
+		// Generic navdata
+		cout << "Altitude: " << navdata->altitude << "m" << endl;
+
+		// Drone specific navdata
+		if(drone_type == ARDRONE2)
+		{
+			cout << "Acceleration (z Axis): " << static_pointer_cast<const ardrone2::navdata>(navdata)->acceleration(2) << "m" << endl;
+		}
+		else if(drone_type == BEBOP)
+		{
+			cout << "Latitude: " << static_pointer_cast<const bebop::navdata>(navdata)->latitude << "\u00B0" << endl;
+			cout << "Longitude: " << static_pointer_cast<const bebop::navdata>(navdata)->longitude << "\u00B0" << endl;
+		}*/
 	}
 };
 
@@ -68,7 +80,7 @@ int main(int argc, char **argv)
 	{
 		_drone.reset(new ARDrone2());
 	}
-	else
+	else if(drone_type == BEBOP)
 	{
 		_drone.reset(new Bebop());
 	}

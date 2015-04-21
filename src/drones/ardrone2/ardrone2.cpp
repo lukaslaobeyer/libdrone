@@ -159,10 +159,10 @@ bool ARDrone2::decodeNavdata(shared_ptr<drone::navdata> &navdata)
 
 	navdata->altitude = ardrone2_navdata->altitude;
 	navdata->attitude = Eigen::Vector3f(ardrone2_navdata->theta, ardrone2_navdata->psi, ardrone2_navdata->phi);
-	navdata->batteryStatus = ardrone2_navdata->vbatpercentage / 100;
+	navdata->batterystatus = ardrone2_navdata->vbatpercentage / 100;
 	navdata->flying = ardrone2_navdata->ctrlstate & ardrone2::ctrlstate::ARDRONE_FLY_MASK;
 	navdata->linearvelocity = Eigen::Vector3f(ardrone2_navdata->vx, ardrone2_navdata->vy, ardrone2_navdata->vz);
-	navdata->linkQuality = ardrone2_navdata->wifipercentage;
+	navdata->linkquality = ardrone2_navdata->wifipercentage;
 
 	static_pointer_cast<ardrone2::navdata>(navdata)->acceleration = Eigen::Vector3f(ardrone2_navdata->ax, ardrone2_navdata->ay, ardrone2_navdata->az);
 	static_pointer_cast<ardrone2::navdata>(navdata)->magnetometer = Eigen::Vector3f(ardrone2_navdata->mx, ardrone2_navdata->my, ardrone2_navdata->mz);

@@ -71,6 +71,8 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	boost::property_tree::read_json(discovery_response_buf, discovery_response);
 
 	int c2d_port = discovery_response.get<int>("c2d_port");
+	int videoFragmentSize = discovery_response.get<int>("arstream_fragment_size");
+	int videoMaxFragmentNumber = discovery_response.get<int>("arstream_fragment_maximum_number");
 
 	/////// INITIALIZE NAVDATA CONNECTION ///////
 	_d2c_socket.reset(new udp::socket(io_service, udp::v4()));
@@ -87,6 +89,9 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 
 	// Start receiving packets
 	startReceivingNavdata();
+
+	/////// INITIALIZE VIDEO DECODER ///////
+	_videodecoder.reset(new videodecoder(videoFragmentSize, videoMaxFragmentNumber));
 
 	/*
 	// Flat trim
@@ -121,33 +126,23 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 		uint32_t size;
 		memcpy(&size, &_navdata_receivedDataBuffer[3], sizeof(uint32_t));
 
-		cout << (int) seqNum << "\t" << size << "\t";
-
 		// Find out type of data (see ARNETWORKAL_Frame.h in libARNetworkAL of the official SDK)
 		switch(_navdata_receivedDataBuffer[0])
 		{
-		case frametype::ACK:
-			// Ack packet
-			cout << "  ack";
-			break;
 		case frametype::DATA:
 			// Regular data
-			cout << " data";
 
 			switch(_navdata_receivedDataBuffer[1])
 			{
 			case frameid::PING:
 				// Request for pong packet
-				cout << " ping";
 				sendPong(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			case frameid::PONG:
 				// Confirmation that pong packet was received
-				cout << " pong";
 				break;
 			case frameid::NAVDATA:
 				// Navigation data packet
-				cout << " navdata";
 				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			default:
@@ -158,35 +153,29 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 			break;
 		case frametype::LOW_LATENCY:
 			// Low latency data
-			cout << "low latency data\t";
 			switch(_navdata_receivedDataBuffer[1])
 			{
 			case frameid::VIDEO_WITH_ACK:
-				cout << "ack'd video";
 				decodeVideoPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				sendVideoAck(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			default:
-				cout << "UNKNOWN ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
+				cout << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec << endl;
 			}
 			break;
 		case frametype::DATA_WITH_ACK:
 			// Data with ack
-			cout << "ack'd";
 			switch(_navdata_receivedDataBuffer[1])
 			{
 			case frameid::NAVDATA_WITH_ACK:
-				cout << " navdata";
 				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				sendAck(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			default:
-				cout << "UNKNOWN ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
+				cout << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec << endl;
 			}
 			break;
 		}
-
-		cout << endl;
 	}
 	else
 	{
@@ -292,6 +281,20 @@ void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 	seqNum++;
 }
 
+shared_ptr<navdata> controllink::getNavdata()
+{
+	shared_ptr<navdata> navdata = make_shared<bebop::navdata>();
+
+	*navdata = _navdata; // Copy local navdata
+
+	return navdata;
+}
+
+cv::Mat controllink::getVideoFrame()
+{
+	return _videodecoder->getLatestFrame();
+}
+
 void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
 {
 	uint8_t  dataDevice = receivedDataBuffer[7]; // See the XML files in libARCommands of the official SDK
@@ -302,89 +305,94 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 
 	if(navdata_key == navdata_ids::wifi_rssi)
 	{
-		cout << "\twifi\t\t\t";
-		int16_t wifi_rssi;
+		int16_t wifi_rssi; // in dBm
 		memcpy(&wifi_rssi, &_navdata_receivedDataBuffer.data()[11], sizeof(wifi_rssi));
-		cout << (int) wifi_rssi << "dBm\t" << (int) (2*(wifi_rssi+100)) << "%"; // Percentage according to Microsoft
+
+		int link_quality = min(2*(wifi_rssi+100), 100); // in %, according to Microsoft
+
+		_navdata.linkquality = (float) link_quality / 100.0f;
 	}
 	else if(navdata_key == navdata_ids::battery_status)
 	{
-		cout << "\tbattery charge\t\t";
 		uint8_t battery_percentage = _navdata_receivedDataBuffer[11];
-		cout << (int) battery_percentage << "%";
+
+		_navdata.batterystatus = (float) battery_percentage / 100.0f;
 	}
 	else if(navdata_key == navdata_ids::altitude)
 	{
-		cout << "\taltitude\t\t";
 		double altitude;
 		memcpy(&altitude, &_navdata_receivedDataBuffer.data()[11], sizeof(double));	memcpy(&altitude, &_navdata_receivedDataBuffer.data()[11], sizeof(double));
-		cout << altitude;
+
+		_navdata.altitude = altitude;
 	}
 	else if(navdata_key == navdata_ids::attitude)
 	{
-		cout << "\tattitude\t\t";
 		float roll, pitch, yaw;
 		memcpy(&roll, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
 		memcpy(&pitch, &_navdata_receivedDataBuffer.data()[11 + 4], sizeof(float));
 		memcpy(&yaw, &_navdata_receivedDataBuffer.data()[11 + 4*2], sizeof(float));
-		cout << roll * (360/(2*3.1416)) << "\t";
-		cout << pitch * (360/(2*3.1416)) << "\t";
-		cout << yaw * (360/(2*3.1416));
+
+		_navdata.attitude = Eigen::Vector3f(pitch, roll, yaw);
 	}
 	else if(navdata_key == navdata_ids::speed)
 	{
-		cout << "\tspeed\t\t\t";
 		float speedX, speedY, speedZ;
 		memcpy(&speedX, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
 		memcpy(&speedY, &_navdata_receivedDataBuffer.data()[11 + 4], sizeof(float));
 		memcpy(&speedZ, &_navdata_receivedDataBuffer.data()[11 + 4*2], sizeof(float));
-		cout << speedX << "\t";
-		cout << speedY << "\t";
-		cout << speedZ;
+
+		_navdata.linearvelocity = Eigen::Vector3f(speedX, speedY, speedZ);
 	}
 	else if(navdata_key == navdata_ids::gps)
 	{
-		cout << "\tgps\t\t\t";
 		double lat, lon, alt;
 		memcpy(&lat, &_navdata_receivedDataBuffer.data()[11], sizeof(double));
 		memcpy(&lon, &_navdata_receivedDataBuffer.data()[11 + 8], sizeof(double));
 		memcpy(&alt, &_navdata_receivedDataBuffer.data()[11 + 8*2], sizeof(double));
-		cout << lat << "\t";
-		cout << lon << "\t";
-		cout << alt;
+
+		_navdata.latitude = lat;
+		_navdata.longitude = lon;
+		_navdata.gps_altitude = alt;
 	}
 	else if(navdata_key == navdata_ids::camera_orientation)
 	{
-		cout << "\tcamera orientation\t";
 		int8_t tilt = _navdata_receivedDataBuffer[11];
 		int8_t pan = _navdata_receivedDataBuffer[12];
-		cout << (int) tilt << "\t" << (int) pan;
+
+		_navdata.cameraorientation = Eigen::Vector2f(tilt, pan);
 	}
 	else if(navdata_key == navdata_ids::flattrim)
 	{
-		cout << "\tflat trim ack'd\t";
+		cout << "flat trim ack'd" << endl;
 	}
 	else if(navdata_key == navdata_ids::streaming_state)
 	{
-		cout << "\tstreaming state changed\t";
 		uint8_t state = _navdata_receivedDataBuffer[11];
-		cout << (int) state;
+
+		cout << "streaming state changed: " << (int) state << endl;
 	}
 	else if(navdata_key == navdata_ids::flying_state)
 	{
-		cout << "\tflying state changed\t";
 		uint8_t state = _navdata_receivedDataBuffer[11];
-		cout << (int) state;
+
+		if(state == 0 || state == 5)
+		{
+			_navdata.flying = false;
+		}
+		else
+		{
+			_navdata.flying = true;
+		}
 	}
 	else if(navdata_key == navdata_ids::alert_state)
 	{
-		cout << "\talert state changed\t";
 		uint8_t state = _navdata_receivedDataBuffer[11];
-		cout << (int) state;
+
+		cout << "alert state changed: " << (int) state << endl;
 	}
 	else
 	{
-		cout << "\tUNKNOWN: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID << "\t";
+		cout << "UNKNOWN NAVDATA: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID << endl;
 	}
 }
 
@@ -396,7 +404,7 @@ void controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_
 	uint8_t fragmentIndex = receivedDataBuffer[10];
 	uint8_t fragmentsInFrame = receivedDataBuffer[11];
 
-	cout << "\t" << (int) frameIndex << "\t" << (int) frameFlags << "\t" << (int) fragmentIndex << "\t" << (int) fragmentsInFrame;
+	_videodecoder->insertFragment(receivedDataBuffer, frameIndex, fragmentsInFrame, fragmentIndex, bytes_transferred - 12);
 }
 
 vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::any> &args)

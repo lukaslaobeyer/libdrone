@@ -35,7 +35,7 @@ class Bebop : public FPVDrone
 
 	private:
 		std::string _ip;
-		std::unique_ptr<bebop::controllink> ctrllink = nullptr;
+		std::unique_ptr<bebop::controllink> _ctrllink = nullptr;
 		std::unique_ptr<boost::asio::io_service> _io_service = nullptr;
 };
 

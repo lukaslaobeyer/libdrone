@@ -1,13 +1,12 @@
 #ifndef LIBDRONE_BEBOP_CONTROLLINK_H
 #define LIBDRONE_BEBOP_CONTROLLINK_H
 
-#define BEBOP_NAVDATA_BUFFER_SIZE 4096
-
 #include <drones/bebop/constants.h>
 #include <types.h>
 #include <commands.h>
 
 #include "protocol.h"
+#include "videodecoder.h"
 
 #include <memory>
 #include <array>
@@ -17,6 +16,8 @@
 
 #include <boost/asio.hpp>
 
+#include <opencv2/opencv.hpp>
+
 class InvalidCommandException : public std::runtime_error
 {
 	public:
@@ -25,7 +26,6 @@ class InvalidCommandException : public std::runtime_error
 
 namespace bebop
 {
-	typedef std::array<char, BEBOP_NAVDATA_BUFFER_SIZE> d2cbuffer;
 	typedef std::array<char, 7> frameheaderbuf;
 
 	class controllink
@@ -36,6 +36,9 @@ namespace bebop
 			void init(std::string ip, boost::asio::io_service &io_service);
 			
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args);
+
+			std::shared_ptr<navdata> getNavdata();
+			cv::Mat getVideoFrame();
 
 			static std::vector<char> createCommand(navdata_id &command_id, std::vector<boost::any> &args);
 			static frameheaderbuf createHeader(frameheader &header);
@@ -54,10 +57,12 @@ namespace bebop
 		    std::unique_ptr<boost::asio::ip::udp::socket> _d2c_socket = nullptr;
 		    std::unique_ptr<boost::asio::ip::udp::socket> _c2d_socket = nullptr;
 		    
+		    std::unique_ptr<videodecoder> _videodecoder = nullptr;
+
 		    boost::asio::ip::udp::endpoint _navdata_sender_endpoint;
     		d2cbuffer _navdata_receivedDataBuffer;
 
-    		//std::array<std::array<char, BEBOP_NAVDATA_BUFFER_SIZE>, 128>
+    		navdata _navdata;
 	};
 }
 
