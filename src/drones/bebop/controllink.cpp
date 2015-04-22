@@ -403,8 +403,16 @@ void controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_
 	uint8_t frameFlags = receivedDataBuffer[9];
 	uint8_t fragmentIndex = receivedDataBuffer[10];
 	uint8_t fragmentsInFrame = receivedDataBuffer[11];
-
-	_videodecoder->insertFragment(receivedDataBuffer, frameIndex, fragmentsInFrame, fragmentIndex, bytes_transferred - 12);
+	
+    int frame_size = bytes_transferred - 12;
+    
+	bool fragmentValid = _videodecoder->insertFragment(receivedDataBuffer, frameIndex, fragmentsInFrame, fragmentIndex, frame_size);
+	
+	if(!fragmentValid)
+	{
+	    // Fragment or frame invalid
+	    cout << "Error in frame " << frameIndex << " with fragment " << fragmentIndex << "/" << fragmentsInFrame << " of size " << frame_size << endl;
+	}
 }
 
 vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::any> &args)

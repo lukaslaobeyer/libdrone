@@ -10,7 +10,7 @@ videodecoder::videodecoder(int fragmentSize, int maxFragmentNumber) : _fragmentS
 	_framebuffer.resize(fragmentSize * maxFragmentNumber);
 }
 
-void videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex, int fragmentsInFrame, int fragmentIndex, int fragmentSize)
+bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex, int fragmentsInFrame, int fragmentIndex, int fragmentSize)
 {
 	static bool invalidFrame = false;
 	static int frameSize = 0;
@@ -29,7 +29,7 @@ void videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 
 	if(invalidFrame)
 	{
-		return;
+		return false;
 	}
 
 	// Copy (from begin + 12 to skip metadata sent from Bebop)
@@ -38,8 +38,10 @@ void videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 
 	if(fragmentIndex + 1 == fragmentsInFrame) // Last fragment in frame
 	{
-		decodeFrame(frameSize);
+		return decodeFrame(frameSize);
 	}
+	
+	return true;
 }
 
 bool videodecoder::initializeDecoder()
