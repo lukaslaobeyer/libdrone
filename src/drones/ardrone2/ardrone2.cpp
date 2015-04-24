@@ -188,10 +188,32 @@ bool ARDrone2::processCommand(drone::command &command)
             float yaw = applyLimit(attitude(2), limits.yawspeed); // yawspeed
             float gaz = applyLimit(vspeed, limits.vspeed); // vspeed
 
-            //TODO: convert to value between -1 and 1
+            // Convert from angle to value between -1.0 and 1.0
+            theta = theta * (1/limits.angle);
+            phi = phi * (1/limits.angle);
+            yaw = yaw * (1/limits.yawspeed);
+            gaz = gaz * (1/limits.vspeed);
+
             _latestAttitudeCommand = AttitudeCommand(phi, theta, gaz, yaw);
 
     		_commandqueue.push_back(_latestAttitudeCommand);
+		}
+		break;
+	case drone::commands::id::ATTITUDEREL:
+		{
+			Eigen::Vector3f attitude = boost::any_cast<Eigen::Vector3f>(command.parameters[0]);
+			float vspeed = boost::any_cast<float>(command.parameters[1]);
+
+			drone::limits limits = getLimits();
+
+			float theta = applyLimit(attitude(0), 1.0f); // pitch
+			float phi = applyLimit(attitude(1), 1.0f); // roll
+			float yaw = applyLimit(attitude(2), 1.0f); // yawspeed
+			float gaz = applyLimit(vspeed, 1.0f); // vspeed
+
+			_latestAttitudeCommand = AttitudeCommand(phi, theta, gaz, yaw);
+
+			_commandqueue.push_back(_latestAttitudeCommand);
 		}
 		break;
 	case drone::commands::id::EMERGENCY:
@@ -246,6 +268,29 @@ bool ARDrone2::processCommand(drone::command &command)
 	        _commandqueue.push_back(ZapCommand(front));
 	    }
 	    break;
+	case ardrone2::commands::id::FLIP:
+		{
+			ardrone2::commands::flip::direction direction = boost::any_cast<ardrone2::commands::flip::direction>(command.parameters[0]);
+			int dir = 0;
+			switch(direction)
+			{
+			case ardrone2::commands::flip::direction::FRONT:
+				dir = 0;
+				break;
+			case ardrone2::commands::flip::direction::LEFT:
+				dir = 1;
+				break;
+			case ardrone2::commands::flip::direction::BACK:
+				dir = 2;
+				break;
+			case ardrone2::commands::flip::direction::RIGHT:
+				dir = 3;
+				break;
+			}
+
+			_commandqueue.push_back(FlipCommand(dir));
+		}
+		break;
 	}
 	return true;
 }

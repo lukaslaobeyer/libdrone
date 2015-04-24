@@ -14,6 +14,7 @@ namespace ardrone2
 			static const int CONFIG	      = 0xAD20002;
 			static const int RECORDONUSB  = 0xAD20003;
 			static const int SWITCHVIEW   = 0xAD20004;
+			static const int FLIP		  = 0xAD20005;
 		};
 
 		struct magnetometercalibration : drone::command
@@ -44,6 +45,16 @@ namespace ardrone2
 
 			switchview(view v)
 			: drone::command{id::SWITCHVIEW, std::vector<boost::any>{v}} {}
+		};
+
+		struct flip : drone::command
+		{
+			enum direction
+			{
+				FRONT, LEFT, BACK, RIGHT
+			};
+			flip(direction d)
+			: drone::command{id::FLIP, std::vector<boost::any>{d}} {}
 		};
 	}
 }

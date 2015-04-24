@@ -24,7 +24,7 @@ namespace bebop
 		private:
 			bool initializeDecoder();
 			void initializeSwsContext(int width, int height);
-			void decodeFrame(int frameSize);
+			bool decodeFrame(int frameSize);
 
 			int _fragmentSize;
 			std::vector<char> _framebuffer;

@@ -1,4 +1,5 @@
 #include <drones/bebop/bebop.h>
+#include <drones/bebop/commands.h>
 
 #include "protocol.h"
 #include "commandcomposer.h"
@@ -75,7 +76,7 @@ void Bebop::beforeUpdate()
 
 void Bebop::updateCycle()
 {
-
+	FPVDrone::updateCycle();
 }
 
 bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
@@ -116,6 +117,24 @@ bool Bebop::processCommand(drone::command &command)
 			processed = true;
 		}
 		break;
+	case drone::commands::id::ATTITUDEREL:
+		{
+			Eigen::Vector3f attitude = boost::any_cast<Eigen::Vector3f>(command.parameters[0]);
+			float vspeed = boost::any_cast<float>(command.parameters[1]);
+
+			drone::limits limits = getLimits();
+
+			float pitch = applyLimit(attitude(0), 1.0f); // pitch
+			float roll = applyLimit(attitude(1), 1.0f); // roll
+			float yaw = applyLimit(attitude(2), 1.0f); // yawspeed
+			float gaz = applyLimit(vspeed, 1.0f); // vspeed
+
+			command_id = bebop::command_ids::pcmd;
+			args = bebop::commands::create::pcmdrel(roll, pitch, yaw, gaz, limits);
+
+			processed = true;
+		}
+		break;
 	case drone::commands::id::TAKEOFF:
 		{
 			command_id = bebop::command_ids::takeoff;
@@ -137,10 +156,29 @@ bool Bebop::processCommand(drone::command &command)
 	case drone::commands::id::FTTRIM:
 		{
 			command_id = bebop::command_ids::flattrim;
+			processed = true;
 		}
 		break;
 	// Bebop specific commands
-	case drone::commands::id::
+	case bebop::commands::id::CAMERA_ORIENTATION:
+		{
+			float tilt = boost::any_cast<float>(command.parameters[0]);
+			float pan = boost::any_cast<float>(command.parameters[1]);
+
+			command_id = bebop::command_ids::camera_orientation;
+			args = bebop::commands::create::camera_orientation(tilt, pan);
+			processed = true;
+		}
+		break;
+	case bebop::commands::id::FLIP:
+		{
+			bebop::commands::flip::direction direction = boost::any_cast<bebop::commands::flip::direction>(command.parameters[0]);
+
+			command_id = bebop::command_ids::flip;
+			args = bebop::commands::create::flip(direction);
+			processed = true;
+		}
+		break;
 	}
 
 	if(processed)

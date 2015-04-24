@@ -40,7 +40,7 @@ bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 	{
 		return decodeFrame(frameSize);
 	}
-	
+
 	return true;
 }
 
@@ -129,7 +129,7 @@ void videodecoder::initializeSwsContext(int width, int height)
 	}
 }
 
-void videodecoder::decodeFrame(int frameSize)
+bool videodecoder::decodeFrame(int frameSize)
 {
 	static bool initialized = false;
 
@@ -139,6 +139,7 @@ void videodecoder::decodeFrame(int frameSize)
 		if(!initialized)
 		{
 			cout << "Could not initialize decoder!" << endl;
+			return false;
 		}
 	}
 
@@ -167,11 +168,13 @@ void videodecoder::decodeFrame(int frameSize)
 
 		//cv::imshow("Hello!", _frame);
 		//cv::waitKey(1);
+		return true;
 	}
 	else
 	{
 		// Error decoding frame
-		cout << "Error decoding frame" << endl;
+		//cout << "Error decoding frame" << endl;
+		return false;
 	}
 }
 

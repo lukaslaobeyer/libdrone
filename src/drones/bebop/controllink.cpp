@@ -411,7 +411,11 @@ void controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_
 	if(!fragmentValid)
 	{
 	    // Fragment or frame invalid
-	    cout << "Error in frame " << frameIndex << " with fragment " << fragmentIndex << "/" << fragmentsInFrame << " of size " << frame_size << endl;
+	    //cout << " Error in frame " << (int) frameIndex << " with fragment " << (int) fragmentIndex + 1 << "/" << (int) fragmentsInFrame << " of size " << frame_size << endl;
+	}
+	else
+	{
+		//cout << "All OK in frame " << (int) frameIndex << " with fragment " << (int) fragmentIndex + 1 << "/" << (int) fragmentsInFrame << " of size " << frame_size << endl;
 	}
 }
 

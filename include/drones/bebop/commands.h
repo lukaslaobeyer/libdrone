@@ -2,6 +2,7 @@
 #define LIBDRONE_BEBOP_COMMANDS_H
 
 #include <types.h>
+#include <commands.h>
 
 namespace bebop
 {
@@ -61,7 +62,7 @@ namespace bebop
 		{
 			navigate_home(bool start)
 			: drone::command{id::NAVIGATE_HOME, std::vector<boost::any>{start}} {}
-		}
+		};
 	}
 }
 

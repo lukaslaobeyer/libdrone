@@ -19,11 +19,12 @@ namespace drone
 	{
 		struct id
 		{
-			static const int EMERGENCY  = 0x00;
-			static const int TAKEOFF  	= 0x01;
-			static const int LAND     	= 0x02;
-			static const int ATTITUDE 	= 0x03;
-			static const int FTTRIM 	= 0x04;
+			static const int EMERGENCY   = 0x00;
+			static const int TAKEOFF  	 = 0x01;
+			static const int LAND     	 = 0x02;
+			static const int ATTITUDE 	 = 0x03;
+			static const int ATTITUDEREL = 0x04;
+			static const int FTTRIM 	 = 0x05;
 		};
 
 		struct emergency : drone::command
@@ -66,6 +67,12 @@ namespace drone
 			 * vspeed (vertical speed) (float):
 			 * vertical speed in m/s (negative for descending, positive for ascending)
 			 */
+		};
+
+		struct attituderel : drone::command
+		{
+			explicit attituderel(Eigen::Vector3f attitude = Eigen::Vector3f(0, 0, 0), float vspeed = 0)
+			: drone::command{id::ATTITUDEREL, std::vector<boost::any>{boost::any(attitude), boost::any(vspeed)}} {}
 		};
 	}
 }
