@@ -43,7 +43,7 @@ class Drone
 		 * Drone flight commands
 		 */
 		bool addCommand(drone::command command); // Returns false if not connected, true otherwise
-		
+
 		/*
 		 * Utility functions
 		 */
@@ -73,8 +73,8 @@ class Drone
 	private:
 		void runUpdateLoop();
 
-		std::atomic<bool> _stop_flag;
-		std::atomic<bool> _connected;
+		std::atomic<bool> _stop_flag{false};
+		std::atomic<bool> _connected{false};
 
 		boost::thread *_updater = nullptr;
 

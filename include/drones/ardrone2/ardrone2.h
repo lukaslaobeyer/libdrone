@@ -26,7 +26,7 @@ class ARDrone2 : public FPVDrone
 		ARDrone2();
 
 		void setIP(std::string ip);
-		
+
 		drone::limits getLimits();
 
 	protected:
@@ -50,8 +50,10 @@ class ARDrone2 : public FPVDrone
 		int _default_codec = ardrone2::config::codec::H264_360P;
 
 		std::vector<ATCommand> _commandqueue;
-		
+
 		AttitudeCommand _latestAttitudeCommand;
+
+		bool _flying = false;
 };
 
 #endif

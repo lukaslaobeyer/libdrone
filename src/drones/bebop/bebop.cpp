@@ -112,7 +112,9 @@ bool Bebop::processCommand(drone::command &command)
 			float gaz = applyLimit(vspeed, limits.vspeed); // vspeed
 
 			command_id = bebop::command_ids::pcmd;
-			args = bebop::commands::create::pcmd(roll, pitch, yaw, gaz, limits);
+			args = bebop::commands::create::pcmd(roll, -pitch, yaw, gaz, limits);
+
+			_lastAttitudeCommand = command;
 
 			processed = true;
 		}
@@ -130,7 +132,9 @@ bool Bebop::processCommand(drone::command &command)
 			float gaz = applyLimit(vspeed, 1.0f); // vspeed
 
 			command_id = bebop::command_ids::pcmd;
-			args = bebop::commands::create::pcmdrel(roll, pitch, yaw, gaz, limits);
+			args = bebop::commands::create::pcmdrel(roll, -pitch, yaw, gaz, limits);
+
+			_lastAttitudeCommand = command;
 
 			processed = true;
 		}
@@ -192,8 +196,7 @@ bool Bebop::processCommand(drone::command &command)
 
 bool Bebop::processNoCommand()
 {
-	drone::commands::attitude hover;
-	return processCommand(hover);
+	return processCommand(_lastAttitudeCommand);
 }
 
 void Bebop::connectionLost()

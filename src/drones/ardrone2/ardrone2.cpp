@@ -158,15 +158,22 @@ bool ARDrone2::decodeNavdata(shared_ptr<drone::navdata> &navdata)
 	navdata = make_shared<ardrone2::navdata>();
 
 	navdata->altitude = ardrone2_navdata->altitude;
-	navdata->attitude = Eigen::Vector3f(ardrone2_navdata->theta, ardrone2_navdata->psi, ardrone2_navdata->phi);
-	navdata->batterystatus = ardrone2_navdata->vbatpercentage / 100;
-	navdata->flying = ardrone2_navdata->ctrlstate & ardrone2::ctrlstate::ARDRONE_FLY_MASK;
+	navdata->attitude = Eigen::Vector3f(ardrone2_navdata->theta / (180.0f/M_PI), ardrone2_navdata->phi / (180.0f/M_PI), ardrone2_navdata->psi / (180.0f/M_PI));
+	navdata->batterystatus = ardrone2_navdata->vbatpercentage / 100.0f;
 	navdata->linearvelocity = Eigen::Vector3f(ardrone2_navdata->vx, ardrone2_navdata->vy, ardrone2_navdata->vz);
-	navdata->linkquality = ardrone2_navdata->wifipercentage;
+	navdata->linkquality = -1; // AR.Drone 2.0 WiFi quality indication does for whatever reason not work
 
 	static_pointer_cast<ardrone2::navdata>(navdata)->acceleration = Eigen::Vector3f(ardrone2_navdata->ax, ardrone2_navdata->ay, ardrone2_navdata->az);
 	static_pointer_cast<ardrone2::navdata>(navdata)->magnetometer = Eigen::Vector3f(ardrone2_navdata->mx, ardrone2_navdata->my, ardrone2_navdata->mz);
 	static_pointer_cast<ardrone2::navdata>(navdata)->pressure = ardrone2_navdata->p;
+
+	std::bitset<32> ctrlstate(ardrone2_navdata->ctrlstate);
+	if(ctrlstate.test(0))
+	{
+		_flying = true; // This bit is set after taking off, but is unset when moving the drone (What's going on, Parrot?)
+					    // The _flying variable gets set to false when a landing command is requested.
+	}
+	navdata->flying = _flying;
 
 	return true;
 }
@@ -229,6 +236,7 @@ bool ARDrone2::processCommand(drone::command &command)
 	case drone::commands::id::LAND:
 	    {
 	        _commandqueue.push_back(LandCommand());
+			_flying = false;
 	    }
 	    break;
 	case drone::commands::id::TAKEOFF:
