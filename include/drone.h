@@ -9,6 +9,7 @@
 #include <vector>
 #include <atomic>
 #include <memory>
+#include <mutex>
 
 #include <boost/thread.hpp>
 
@@ -78,6 +79,7 @@ class Drone
 
 		boost::thread *_updater = nullptr;
 
+		std::mutex _commandmutex;
 		std::vector<drone::command> _commandqueue;
 
 		std::vector<INavdataListener *> _ndlisteners;

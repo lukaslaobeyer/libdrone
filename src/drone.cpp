@@ -165,6 +165,7 @@ void Drone::runUpdateLoop()
 		beforeUpdate();
 
 		// Process command queue
+		_commandmutex.lock();
 		if(_commandqueue.empty())
 		{
 			_connected.store(processNoCommand());
@@ -186,6 +187,7 @@ void Drone::runUpdateLoop()
 			}
 		}
 		_commandqueue.clear();
+		_commandmutex.unlock();
 
 		// Retrieve and process navdata
 		std::shared_ptr<drone::navdata> navdata;
@@ -222,7 +224,9 @@ bool Drone::addCommand(drone::command command)
 		return false;
 	}
 
+	_commandmutex.lock();
 	_commandqueue.push_back(command);
+	_commandmutex.unlock();
 
 	return true;
 }
