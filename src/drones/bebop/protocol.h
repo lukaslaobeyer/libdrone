@@ -80,8 +80,8 @@ namespace bebop
 		const navdata_id alert_state{1, 4, 2, "B"};
 		const navdata_id homenavigation_state{1, 4, 3, "B"};
 
-		const navdata_id picture_taken{1, 8, 0, "B"}; // 1 if picture taken
-		const navdata_id video_recording_state{1, 8, 1, "B"}; //TODO: decode state
+		const navdata_id picture_taken{1, 8, 2, "BB"}; // 1 if picture taken; error state
+		const navdata_id video_recording_state{1, 8, 3, "B"}; // 1 if recording started; error state
 
 		const navdata_id streaming_state{1, 22, 0, "B"}; // 0: enabled; 1: disabled; 2: error
 
@@ -121,8 +121,8 @@ namespace bebop
 
 		const navdata_id camera_orientation{1, 1, 0, "bb"}; // tilt, pan in deg
 
-		const navdata_id take_picture{1, 7, 0, "B"}; // Mass storage ID (whatever that means, Parrot! ...) TODO: find this out
-		const navdata_id video{1, 7, 1, "BB"}; // 1: 1 to start recording, 0 to stop; 2: Mass storage ID
+		const navdata_id take_picture{1, 7, 2, ""};
+		const navdata_id video{1, 7, 3, "B"}; // 1: 1 to start recording, 0 to stop
 
 		const navdata_id max_altitude{1, 2, 0, "f"}; // Maximum altitude in m
 		const navdata_id max_tilt{1, 2, 1, "f"}; // Maximum tilt in deg

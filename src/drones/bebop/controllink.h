@@ -52,7 +52,7 @@ namespace bebop
 			void sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_received);
 
 			void decodeNavdataPacket(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
-			void decodeVideoPacket(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
+			bool decodeVideoPacket(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
 
 		    std::unique_ptr<boost::asio::ip::udp::socket> _d2c_socket = nullptr;
 		    std::unique_ptr<boost::asio::ip::udp::socket> _c2d_socket = nullptr;

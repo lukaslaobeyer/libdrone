@@ -38,7 +38,7 @@ bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 
 	if(fragmentIndex + 1 == fragmentsInFrame) // Last fragment in frame
 	{
-		return decodeFrame(frameSize);
+		decodeFrame(frameSize);
 	}
 
 	return true;

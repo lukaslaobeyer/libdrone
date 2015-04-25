@@ -16,7 +16,16 @@ using boost::asio::ip::udp;
 
 controllink::controllink()
 {
-
+	_navdata.altitude = 0;
+	_navdata.attitude = Eigen::Vector3f();
+	_navdata.batterystatus = 0;
+	_navdata.cameraorientation = Eigen::Vector2f();
+	_navdata.flying = false;
+	_navdata.gps_altitude = 0;
+	_navdata.latitude = 0;
+	_navdata.linearvelocity = Eigen::Vector3f();
+	_navdata.linkquality = 0;
+	_navdata.longitude = 0;
 }
 
 void controllink::init(string ip, boost::asio::io_service &io_service)
@@ -110,6 +119,10 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	navdata_id getstatus_id = command_ids::getstatus;
 	vector<boost::any> gs_args = {};
 	sendCommand(getstatus_id, gs_args);
+
+	/*navdata_id autorecord_id = command_ids::video_autorecord;
+	vector<boost::any> ar_args = {(uint8_t) 0, (uint8_t) 0};
+	sendCommand(autorecord_id, ar_args);*/
 }
 
 void controllink::startReceivingNavdata()
@@ -390,13 +403,25 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 
 		cout << "alert state changed: " << (int) state << endl;
 	}
+	else if(navdata_key == navdata_ids::picture_taken)
+	{
+		uint8_t state = _navdata_receivedDataBuffer[11];
+
+		cout << "picture taken? " << (int) state << endl;
+	}
+	else if(navdata_key == navdata_ids::video_recording_state)
+	{
+		uint8_t state = _navdata_receivedDataBuffer[11];
+
+		cout << "video recording? " << (int) state << endl;
+	}
 	else
 	{
 		cout << "UNKNOWN NAVDATA: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID << endl;
 	}
 }
 
-void controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
+bool controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
 {
 	uint16_t frameIndex;
 	memcpy(&frameIndex, &receivedDataBuffer[7], sizeof(uint16_t));
@@ -408,15 +433,7 @@ void controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_
     
 	bool fragmentValid = _videodecoder->insertFragment(receivedDataBuffer, frameIndex, fragmentsInFrame, fragmentIndex, frame_size);
 	
-	if(!fragmentValid)
-	{
-	    // Fragment or frame invalid
-	    //cout << " Error in frame " << (int) frameIndex << " with fragment " << (int) fragmentIndex + 1 << "/" << (int) fragmentsInFrame << " of size " << frame_size << endl;
-	}
-	else
-	{
-		//cout << "All OK in frame " << (int) frameIndex << " with fragment " << (int) fragmentIndex + 1 << "/" << (int) fragmentsInFrame << " of size " << frame_size << endl;
-	}
+	return fragmentValid;
 }
 
 vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::any> &args)

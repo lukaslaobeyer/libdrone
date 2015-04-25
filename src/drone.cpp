@@ -4,6 +4,9 @@
 
 #include <boost/timer/timer.hpp>
 
+#include <chrono>
+#include <iostream>
+
 drone::connectionstatus Drone::connect()
 {
 	if(_connected.load())
@@ -147,9 +150,9 @@ void Drone::runUpdateLoop()
 
 	while(!_stop_flag)
 	{
-		// TODO: Think this through really well, find memory leaks!
-
 		timer.start();
+
+		// TODO: Think this through really well, find memory leaks!
 
 		// Check connection status and handle unexpected loss of connection
 		if(!_connected.load()) {

@@ -22,12 +22,17 @@
 class ARDrone2 : public FPVDrone
 {
 	public:
-		explicit ARDrone2(std::string ip);
-		ARDrone2();
+		explicit ARDrone2(std::string saveDir, std::string ip);
+		ARDrone2(std::string saveDir);
 
 		void setIP(std::string ip);
 
 		drone::limits getLimits();
+
+		void takePicture();
+		bool isRecording();
+		void startRecording();
+		void stopRecording();
 
 	protected:
 		drone::connectionstatus tryConnecting();
@@ -41,6 +46,7 @@ class ARDrone2 : public FPVDrone
 
 	private:
 		std::string _ip;
+		std::string _saveDir;
 		boost::asio::io_service *_io_service = nullptr;
 
 		ControlLink _cl;
@@ -54,6 +60,7 @@ class ARDrone2 : public FPVDrone
 		AttitudeCommand _latestAttitudeCommand;
 
 		bool _flying = false;
+		bool _recording = false;
 };
 
 #endif

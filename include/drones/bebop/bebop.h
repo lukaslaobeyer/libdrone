@@ -23,6 +23,11 @@ class Bebop : public FPVDrone
 
 		drone::limits getLimits();
 
+		void takePicture();
+		bool isRecording();
+		void startRecording();
+		void stopRecording();
+
 	protected:
 		drone::connectionstatus tryConnecting();
 		void beforeUpdate();
@@ -38,6 +43,8 @@ class Bebop : public FPVDrone
 		std::unique_ptr<bebop::controllink> _ctrllink = nullptr;
 		std::unique_ptr<boost::asio::io_service> _io_service = nullptr;
 		drone::command _lastAttitudeCommand = drone::commands::attitude();
+
+		bool _recording = false;
 };
 
 #endif

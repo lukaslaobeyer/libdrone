@@ -26,6 +26,39 @@ drone::limits Bebop::getLimits()
 	return limits;
 }
 
+void Bebop::takePicture()
+{
+	bebop::navdata_id command_id = bebop::command_ids::take_picture;
+	vector<boost::any> args{};
+
+	_ctrllink->sendCommand(command_id, args);
+}
+
+bool Bebop::isRecording()
+{
+	return _recording;
+}
+
+void Bebop::startRecording()
+{
+	bebop::navdata_id command_id = bebop::command_ids::video;
+	vector<boost::any> args{(uint8_t) 1};
+
+	_ctrllink->sendCommand(command_id, args);
+
+	_recording = true;
+}
+
+void Bebop::stopRecording()
+{
+	bebop::navdata_id command_id = bebop::command_ids::video;
+	vector<boost::any> args{(uint8_t) 0};
+
+	_ctrllink->sendCommand(command_id, args);
+
+	_recording = false;
+}
+
 drone::connectionstatus Bebop::tryConnecting()
 {
 	try

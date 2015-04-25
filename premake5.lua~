@@ -34,7 +34,7 @@ project "drone"
 
     links
     {
-        "boost_system", "boost_thread", "boost_timer", "boost_filesystem",
+        "boost_system", "boost_thread", "boost_timer",
         "opencv_core", "opencv_highgui", "opencv_imgcodecs",
         "avcodec", "avutil", "avformat", "swresample", "swscale"
     }

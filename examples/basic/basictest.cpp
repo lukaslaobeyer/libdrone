@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	// Setup drone and connect
 	if(drone_type == ARDRONE2)
 	{
-		_drone.reset(new ARDrone2());
+		_drone.reset(new ARDrone2("./"));
 	}
 	else if(drone_type == BEBOP)
 	{

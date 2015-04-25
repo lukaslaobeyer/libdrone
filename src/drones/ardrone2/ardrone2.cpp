@@ -17,14 +17,13 @@
 
 #include <iostream>
 
+#include <boost/filesystem.hpp>
+
 using namespace std;
 
-ARDrone2::ARDrone2() : ARDrone2(ardrone2::DEFAULT_IP) {}
+ARDrone2::ARDrone2(string saveDir) : ARDrone2(saveDir, ardrone2::DEFAULT_IP) {}
 
-ARDrone2::ARDrone2(string ip)
-{
-	_ip = ip;
-}
+ARDrone2::ARDrone2(string saveDir, string ip) : _saveDir(saveDir), _ip(ip) {}
 
 void ARDrone2::setIP(string ip)
 {
@@ -37,6 +36,77 @@ drone::limits ARDrone2::getLimits()
     drone::limits limits;
 
     return limits;
+}
+
+void ARDrone2::takePicture()
+{
+	try
+	{
+		string picdirectory = _saveDir;
+		picdirectory.append("Pictures/");
+
+		// Create the directory if it doesn't exist
+		boost::filesystem::create_directories(picdirectory);
+
+		const boost::posix_time::ptime time = boost::posix_time::second_clock::local_time();
+		stringstream timestamp;
+		timestamp << setw(4) << setfill('0') << time.date().year() << setw(2) << time.date().month().as_number() << setw(2) << time.date().day().as_number();
+		timestamp << "T";
+		timestamp << setw(2) << time.time_of_day().hours() << setw(2) << time.time_of_day().minutes() << setw(2) << time.time_of_day().seconds();
+
+		string filename = "Pic_";
+		filename.append(timestamp.str());
+		filename.append(".jpg");
+
+		string path = picdirectory + filename;
+		_vm.takePicture(path);
+	}
+	catch(std::exception &ex)
+	{
+		cerr << "Error! Could not save picture." << endl;
+		cerr << ex.what() << endl;
+	}
+}
+
+bool ARDrone2::isRecording()
+{
+	return _recording;
+}
+
+void ARDrone2::startRecording()
+{
+	try
+	{
+		// Create the dirextory if it doesn't exist
+		string videodirectory = _saveDir;
+		videodirectory.append("Videos/");
+		boost::filesystem::create_directories(videodirectory);
+
+		const boost::posix_time::ptime time = boost::posix_time::second_clock::local_time();
+		stringstream timestamp;
+		timestamp << setw(4) << setfill('0') << time.date().year() << setw(2) << time.date().month().as_number() << setw(2) << time.date().day().as_number();
+		timestamp << "T";
+		timestamp << setw(2) << time.time_of_day().hours() << setw(2) << time.time_of_day().minutes() << setw(2) << time.time_of_day().seconds();
+
+		string filename = "Vid_";
+		filename.append(timestamp.str());
+		filename.append(".mp4");
+
+		if(_vm.startRecording(videodirectory + filename))
+		{
+			_recording = true;
+		}
+	}
+	catch(runtime_error &e)
+	{
+		cerr << "Error: " << e.what() << endl;
+	}
+}
+
+void ARDrone2::stopRecording()
+{
+	_vm.stopRecording();
+	_recording = false;
 }
 
 drone::connectionstatus ARDrone2::tryConnecting()
