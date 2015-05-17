@@ -1,5 +1,6 @@
 solution "libdrone"
-    configurations {"Debug", "Release"}
+    configurations { "Debug", "Release" }
+    platforms { "linux", "mingw" }
     location "build"
 
     configuration "Debug"
@@ -13,31 +14,60 @@ project "drone"
     -- Enable C++11
     buildoptions { "-std=c++11" }
 
-    -- Include third-party libraries
-    includedirs
-    {
-        "/opt/ffmpeg/include",
-        "/opt/opencv/include",
-        "/usr/include/eigen3"
-    }
-
     -- Source files and library headers
     includedirs { "include" }
     files { "src/**.h", "src/**.cpp" }
 
-    -- Link libraries
-    libdirs
-    {
-        "/opt/ffmpeg/lib/",
-        "/opt/opencv/lib/"
-    }
+    -- For Linux
+    configuration { "linux" }
+        -- Include third-party libraries
+        includedirs
+        {
+            "/opt/ffmpeg/include",
+            "/opt/opencv/include",
+            "/usr/include/eigen3"
+        }
 
-    links
-    {
-        "boost_system", "boost_thread", "boost_timer", "boost_filesystem",
-        "opencv_core", "opencv_highgui", "opencv_imgcodecs",
-        "avcodec", "avutil", "avformat", "swresample", "swscale"
-    }
+        -- Link libraries
+        libdirs
+        {
+            "/opt/ffmpeg/lib/",
+            "/opt/opencv/lib/"
+        }
+
+        links
+        {
+            "boost_system", "boost_thread", "boost_timer", "boost_filesystem",
+            "opencv_core", "opencv_highgui", "opencv_imgcodecs",
+            "avcodec", "avutil", "avformat", "swresample", "swscale"
+        }
+
+    -- For MinGW on Windows
+    configuration { "mingw" }
+        -- Include third-party libraries
+        includedirs
+        {
+            "C:/boost/build/include/boost-1_58",
+            "C:/ffmpeg/include",
+            "C:/opencv/install/include",
+            "C:/eigen3/include"
+        }
+
+        -- Link libraries
+        libdirs
+        {
+            "C:/boost/build/lib",
+            "C:/ffmpeg/lib/",
+            "C:/opencv/install/x86/mingw/lib"
+        }
+
+        links
+        {
+            "ws2_32",
+            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58", "boost_filesystem-mgw49-mt-d-1_58", "boost_chrono-mgw49-mt-d-1_58",
+            "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300",
+            "avcodec", "avutil", "avformat", "swresample", "swscale"
+        }
 
 project "example-basic"
     kind "ConsoleApp"
@@ -47,31 +77,60 @@ project "example-basic"
     -- Enable C++11
     buildoptions { "-std=c++11" }
 
-    -- Include third-party libraries
-    includedirs
-    {
-        "/opt/ffmpeg/include",
-        "/opt/opencv/include",
-        "/usr/include/eigen3"
-    }
-
     -- Include libdrone
     includedirs { "include" }
 
     -- Source files
     files { "examples/basic/**.h", "examples/basic/**.cpp" }
 
-    -- Link libraries
-    libdirs
-    {
-        "/opt/ffmpeg/lib/",
-        "/opt/opencv/lib/"
-    }
+    configuration { "linux" }
+        -- Include third-party libraries
+        includedirs
+        {
+            "/opt/ffmpeg/include",
+            "/opt/opencv/include",
+            "/usr/include/eigen3"
+        }
 
-    links
-    {
-        "boost_system", "boost_thread", "boost_timer",
-        "opencv_core", "opencv_highgui", "opencv_imgcodecs",
-        "avcodec", "avutil", "avformat", "swresample", "swscale",
-        "drone"
-    }
+        -- Link libraries
+        libdirs
+        {
+            "/opt/ffmpeg/lib/",
+            "/opt/opencv/lib/"
+        }
+
+        links
+        {
+            "boost_system", "boost_thread", "boost_timer",
+            "opencv_core", "opencv_highgui", "opencv_imgcodecs",
+            "avcodec", "avutil", "avformat", "swresample", "swscale",
+            "drone"
+        }
+
+    -- For MinGW on Windows
+    configuration { "mingw" }
+        -- Include third-party libraries
+        includedirs
+        {
+            "C:/boost/build/include/boost-1_58",
+            "C:/ffmpeg/include",
+            "C:/opencv/install/include",
+            "C:/eigen3/include"
+        }
+
+        -- Link libraries
+        libdirs
+        {
+            "C:/boost/build/lib",
+            "C:/ffmpeg/lib/",
+            "C:/opencv/install/x86/mingw/lib"
+        }
+
+        links
+        {
+            "ws2_32",
+            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58",
+            "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300",
+            "avcodec", "avutil", "avformat", "swresample", "swscale",
+            "drone"
+        }
