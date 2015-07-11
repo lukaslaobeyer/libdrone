@@ -3,7 +3,7 @@
 
 #include <types.h>
 
-#define BEBOP_NAVDATA_BUFFER_SIZE 4096
+#define BEBOP_NAVDATA_BUFFER_SIZE 65000
 
 namespace bebop
 {

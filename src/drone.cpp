@@ -32,6 +32,21 @@ bool Drone::isConnected()
 	return _connected.load();
 }
 
+std::shared_ptr<const drone::navdata> Drone::getNavdata()
+{
+	std::shared_ptr<drone::navdata> navdata;
+	bool newNavdata = decodeNavdata(navdata);
+
+	if(newNavdata)
+	{
+		return navdata;
+	}
+	else
+	{
+		return nullptr;
+	}
+}
+
 bool Drone::isFlying()
 {
 	std::shared_ptr<drone::navdata> navdata;

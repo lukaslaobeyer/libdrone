@@ -1,5 +1,7 @@
 #include "videodecoder.h"
 
+#include <boost/log/trivial.hpp>
+
 #include <memory>
 
 using namespace bebop;
@@ -14,17 +16,40 @@ bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 {
 	static bool invalidFrame = false;
 	static int frameSize = 0;
+	static int receivedFragmentCount = 0;
+	static int lastFragmentIndex = -1;
+	static int lastFrameIndex = -1;
 
-	if(fragmentIndex == 0) // Reset invalid frame flag if new fragment is first in frame and reset frame size counter
+	static int errors = 0; // For error rate calculation
+	static int errors_rolling = 0; // "
+	static int receivedFrameCount = 0; // "
+
+	if(frameIndex > lastFrameIndex)
 	{
+		// New frame: Reset stuff
+		receivedFragmentCount = 0; // Reset fragment counter
+		lastFragmentIndex = -1;
+	}
+
+	if(fragmentIndex == 0)
+	{
+		// Reset invalid frame flag if new fragment is first in frame and reset frame size counter
 		invalidFrame = false;
 		frameSize = 0;
 	}
 
-	if((fragmentSize != _fragmentSize) && (fragmentIndex + 1 < fragmentsInFrame)) // Fragment has unexpected size and is not the last one in the frame
+	if(fragmentIndex == lastFragmentIndex)
 	{
-		invalidFrame = true;
-		cout << "Invalid frame! Fragment size should be " << _fragmentSize << " but is " << fragmentSize << endl;
+		// Fragment sent twice (??). Ignore the second copy.
+		BOOST_LOG_TRIVIAL(info) << "Duplicate fragment!";
+		return true;
+	}
+
+	if((fragmentSize != _fragmentSize) && (fragmentIndex + 1 < fragmentsInFrame))
+	{
+		// Fragment has unexpected size and is not the last one in the frame
+		// invalidFrame = true;
+		BOOST_LOG_TRIVIAL(warning) << "Invalid frame! Fragment size should be " << _fragmentSize << " but is " << fragmentSize;
 	}
 
 	if(invalidFrame)
@@ -33,12 +58,33 @@ bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 	}
 
 	// Copy (from begin + 12 to skip metadata sent from Bebop)
-	copy(receivedDataBuffer.begin() + 12, receivedDataBuffer.end(), _framebuffer.begin() + _fragmentSize * fragmentIndex);
-	frameSize += fragmentSize;
+	//copy(receivedDataBuffer.begin() + 12, receivedDataBuffer.end(), _framebuffer.begin() + _fragmentSize * fragmentIndex);
+	memcpy(&_framebuffer[0] + _fragmentSize * fragmentIndex, &receivedDataBuffer[0] + 12, fragmentSize);
 
-	if(fragmentIndex + 1 == fragmentsInFrame) // Last fragment in frame
+	frameSize += fragmentSize;
+	lastFragmentIndex = fragmentIndex;
+	lastFrameIndex = frameIndex;
+	receivedFragmentCount++;
+
+	//BOOST_LOG_TRIVIAL(debug) << "i=" << frameIndex << "; " << fragmentIndex << " (" << receivedFragmentCount << "/" << fragmentsInFrame << ")";
+
+	if(receivedFragmentCount == fragmentsInFrame) // Last fragment in frame
 	{
-		decodeFrame(frameSize);
+		//BOOST_LOG_TRIVIAL(debug) << "decoding...";
+		bool error = !decodeFrame(frameSize);
+		if(error)
+		{
+			errors_rolling++;
+			errors++;
+		}
+
+		receivedFrameCount++;
+
+		if(receivedFrameCount % 100 == 0)
+		{
+			BOOST_LOG_TRIVIAL(info) << "Error rate: " << (float) errors/(float) receivedFrameCount * 100.0f << "% (total); " << (float) errors_rolling << "% (last 100 frames)";
+			errors_rolling = 0;
+		}
 	}
 
 	return true;
@@ -53,13 +99,13 @@ bool videodecoder::initializeDecoder()
 	_h264_codec = avcodec_find_decoder(AV_CODEC_ID_H264);
 	if(!_h264_codec)
 	{
-		cout << "Could not find H264 codec!" << endl;
+		BOOST_LOG_TRIVIAL(fatal) << "Could not find H264 codec!";
 		return false;
 	}
 	_h264_context = avcodec_alloc_context3(_h264_codec);
 	if(!_h264_codec)
 	{
-		cout << "Could not allocate codec context!" << endl;
+		BOOST_LOG_TRIVIAL(fatal) << "Could not allocate codec context!";
 		return false;
 	}
 	avcodec_get_context_defaults3(_h264_context, _h264_codec);
@@ -73,24 +119,26 @@ bool videodecoder::initializeDecoder()
 	_h264_context->skip_loop_filter = AVDISCARD_DEFAULT;
 	_h264_context->workaround_bugs = FF_BUG_AUTODETECT;
 	_h264_context->skip_idct = AVDISCARD_DEFAULT;
+	_h264_context->codec_type = AVMEDIA_TYPE_VIDEO;
+	_h264_context->codec_id = AV_CODEC_ID_H264;
 
 	if(avcodec_open2(_h264_context, _h264_codec, nullptr) < 0)
 	{
-		cout << "Could not open codec!" << endl;
+		BOOST_LOG_TRIVIAL(fatal) << "Could not open codec!";
 		return false;
 	}
 
 	_frame_yuv = av_frame_alloc();
 	if(!_frame_yuv)
 	{
-		cout << "Could not allocate video frame!" << endl;
+		BOOST_LOG_TRIVIAL(fatal) << "Could not allocate video frame!";
 		return false;
 	}
 
 	_frame_bgr = av_frame_alloc();
 	if(!_frame_bgr)
 	{
-		cout << "Could not allocate video frame!" << endl;
+		BOOST_LOG_TRIVIAL(fatal) << "Could not allocate video frame!";
 		return false;
 	}
 
@@ -112,11 +160,11 @@ void videodecoder::initializeSwsContext(int width, int height)
 
 		if(!_sws_context)
 		{
-			cout << "Error allocating SwsContext!" << endl;
+			BOOST_LOG_TRIVIAL(fatal) << "Error allocating SwsContext!";
 		}
 		else
 		{
-			cout << "init" << endl;
+			BOOST_LOG_TRIVIAL(debug) << "SwsContext initialized";
 		}
 
 		// Allocate buffer for the _frame_bgr AVFrame and fill it
@@ -138,7 +186,7 @@ bool videodecoder::decodeFrame(int frameSize)
 		initialized = initializeDecoder();
 		if(!initialized)
 		{
-			cout << "Could not initialize decoder!" << endl;
+			BOOST_LOG_TRIVIAL(fatal) << "Could not initialize decoder!";
 			return false;
 		}
 	}
@@ -173,7 +221,7 @@ bool videodecoder::decodeFrame(int frameSize)
 	else
 	{
 		// Error decoding frame
-		//cout << "Error decoding frame" << endl;
+		BOOST_LOG_TRIVIAL(info) << "Error decoding frame! len=" << len << "; got_frame=" << got_frame;
 		return false;
 	}
 }

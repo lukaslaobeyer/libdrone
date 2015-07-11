@@ -1,5 +1,7 @@
 #include "controllink.h"
 
+#include <boost/log/trivial.hpp>
+
 #include <string>
 
 #include <boost/property_tree/ptree.hpp>
@@ -83,6 +85,14 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	int videoFragmentSize = discovery_response.get<int>("arstream_fragment_size");
 	int videoMaxFragmentNumber = discovery_response.get<int>("arstream_fragment_maximum_number");
 
+	BOOST_LOG_TRIVIAL(debug) << "fragment size:   " << videoFragmentSize;
+	BOOST_LOG_TRIVIAL(debug) << "fragment number: " << videoMaxFragmentNumber;
+
+	if(videoFragmentSize > BEBOP_NAVDATA_BUFFER_SIZE)
+	{
+		BOOST_LOG_TRIVIAL(fatal) << "Framebuffer not big enough! Video fragment size > allocated memory!";
+	}
+
 	/////// INITIALIZE NAVDATA CONNECTION ///////
 	_d2c_socket.reset(new udp::socket(io_service, udp::v4()));
 	_d2c_socket->bind(udp::endpoint(udp::v4(), bebop::D2C_PORT));
@@ -107,15 +117,15 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	navdata_id flattrim_id = command_ids::flattrim;
 	vector<boost::any> ft_args = {};
 	sendCommand(flattrim_id, ft_args);*/
-	/*
+
 	// Enable video
 	navdata_id videoen_id = command_ids::enable_streaming;
 	vector<boost::any> vid_args = {(uint8_t) 1};
-	sendCommand(videoen_id, vid_args);*/
+	sendCommand(videoen_id, vid_args);
 	/*
 	navdata_id autotakeoff_id = command_ids::autotakeoff;
 	vector<boost::any> takeoff_args = {(uint8_t) 1};
-	sendCommand(autotakeoff_id, takeoff_args);*/
+	sendCommand(autotakeoff_id, takeoff_args);
 	navdata_id getstatus_id = command_ids::getstatus;
 	vector<boost::any> gs_args = {};
 	sendCommand(getstatus_id, gs_args);
@@ -249,12 +259,14 @@ void controllink::sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_recei
 
 	if(fragmentsInFrame < 64) // Calculate ack bitmasks
 	{
-		lowPacketsAck |= (1<<fragmentIndex);
+		lowPacketsAck |= ((uint64_t) 1 << (uint64_t) fragmentIndex);
 	}
 	else
 	{
-		highPacketsAck |= (1<<(fragmentIndex-64));
+		highPacketsAck |= ((uint64_t) 1 << ((uint64_t) fragmentIndex - (uint64_t) 64));
 	}
+
+	//BOOST_LOG_TRIVIAL(trace) << bitset<64>(highPacketsAck) << "; " << bitset<64>(lowPacketsAck);
 
 	// Prepare the packet for sending
 	frameheader header;
@@ -431,6 +443,8 @@ bool controllink::decodeVideoPacket(d2cbuffer &receivedDataBuffer, size_t bytes_
 	
     int frame_size = bytes_transferred - 12;
     
+    //BOOST_LOG_TRIVIAL(debug) << "n = " << frameIndex << "; " << (int) fragmentIndex+1 << "/" << (int) fragmentsInFrame << "; " << (int) bytes_transferred;
+
 	bool fragmentValid = _videodecoder->insertFragment(receivedDataBuffer, frameIndex, fragmentsInFrame, fragmentIndex, frame_size);
 	
 	return fragmentValid;

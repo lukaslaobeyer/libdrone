@@ -12,7 +12,7 @@ project "drone"
     location "build/libdrone"
 
     -- Enable C++11
-    buildoptions { "-std=c++11" }
+    buildoptions { "-std=c++11", "-DBOOST_LOG_DYN_LINK" }
 
     -- Source files and library headers
     includedirs { "include" }
@@ -37,8 +37,8 @@ project "drone"
 
         links
         {
-            "boost_system", "boost_thread", "boost_timer", "boost_filesystem",
-            "opencv_core", "opencv_highgui", "opencv_imgcodecs",
+            "boost_system", "boost_thread", "boost_timer", "boost_filesystem", "boost_log",
+            "opencv_core", "opencv_highgui", "opencv_imgcodecs", "opencv_imgproc",
             "avcodec", "avutil", "avformat", "swresample", "swscale"
         }
 
@@ -64,8 +64,8 @@ project "drone"
         links
         {
             "ws2_32",
-            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58", "boost_filesystem-mgw49-mt-d-1_58", "boost_chrono-mgw49-mt-d-1_58",
-            "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300",
+            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58", "boost_filesystem-mgw49-mt-d-1_58", "boost_chrono-mgw49-mt-d-1_58", "boost_log-mgw49-mt-d-1_58",
+            "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300", "opencv_imgproc300",
             "avcodec", "avutil", "avformat", "swresample", "swscale"
         }
 
@@ -75,7 +75,7 @@ project "example-basic"
     location "build/examples/basic"
 
     -- Enable C++11
-    buildoptions { "-std=c++11" }
+    buildoptions { "-std=c++11", "-DBOOST_LOG_DYN_LINK" }
 
     -- Include libdrone
     includedirs { "include" }
@@ -101,8 +101,8 @@ project "example-basic"
 
         links
         {
-            "boost_system", "boost_thread", "boost_timer",
-            "opencv_core", "opencv_highgui", "opencv_imgcodecs",
+            "boost_system", "boost_thread", "boost_timer", "boost_log",
+            "opencv_core", "opencv_highgui", "opencv_imgcodecs", "opencv_imgproc",
             "avcodec", "avutil", "avformat", "swresample", "swscale",
             "drone"
         }
@@ -129,8 +129,8 @@ project "example-basic"
         links
         {
             "ws2_32",
-            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58",
-            "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300",
+            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58", "boost_log-mgw49-mt-d-1_58",
+            "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300", "opencv_imgproc300",
             "avcodec", "avutil", "avformat", "swresample", "swscale",
             "drone"
         }
