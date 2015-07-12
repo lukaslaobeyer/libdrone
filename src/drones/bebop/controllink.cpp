@@ -515,11 +515,11 @@ frameheaderbuf controllink::createHeader(frameheader &header)
 	buf[2] = header.seq;
 
 	buf[3] = (uint8_t) header.size;
-    buf[4] = (uint8_t)(header.size>>=8);
-    buf[5] = (uint8_t)(header.size>>=8);
-    buf[6] = (uint8_t)(header.size>>=8);
+	buf[4] = (uint8_t)(header.size>>=8);
+	buf[5] = (uint8_t)(header.size>>=8);
+	buf[6] = (uint8_t)(header.size>>=8);
 
-    return buf;
+	return buf;
 }
 
 vector<char> controllink::assemblePacket(frameheader &header, vector<char> &payload)

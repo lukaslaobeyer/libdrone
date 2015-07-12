@@ -68,18 +68,34 @@ bool drone_calibmagneto(std::shared_ptr<ARDrone2> drone)
 
 bool drone_hover(std::shared_ptr<Drone> drone)
 {
+	_pitch = 0.0f;
+	_roll = 0.0f;
+	_yaw = 0.0f;
+	_gaz = 0.0f;
+	_pitchRel = 0.0f;
+	_rollRel = 0.0f;
+	_yawRel = 0.0f;
+	_gazRel = 0.0f;
 	drone::command attitude = drone::commands::attitude(Eigen::Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
 	return drone->addCommand(attitude);
 }
 
 bool drone_setAttitude(std::shared_ptr<Drone> drone, float pitch, float roll, float yaw, float gaz)
 {
+	_pitch = pitch;
+	_roll = roll;
+	_yaw = yaw;
+	_gaz = gaz;	
 	drone::command attitude = drone::commands::attitude(Eigen::Vector3f(pitch, roll, yaw), gaz);
 	return drone->addCommand(attitude);
 }
 
 bool drone_setAttitudeRel(std::shared_ptr<Drone> drone, float pitchRel, float rollRel, float yawRel, float gazRel)
 {
+	_pitchRel = pitchRel;
+	_rollRel = rollRel;
+	_yawRel = yawRel;
+	_gazRel = gazRel;	
 	drone::command attitude = drone::commands::attituderel(Eigen::Vector3f(pitchRel, rollRel, yawRel), gazRel);
 	return drone->addCommand(attitude);
 }

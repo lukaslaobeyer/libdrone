@@ -1,5 +1,7 @@
 #include "commandcomposer.h"
 
+#include <boost/log/trivial.hpp>
+
 using namespace bebop::commands::create;
 
 std::vector<boost::any> bebop::commands::create::pcmd(float roll, float pitch, float yaw, float gaz, drone::limits &limits)
