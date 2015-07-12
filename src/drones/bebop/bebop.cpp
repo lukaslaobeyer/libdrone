@@ -84,6 +84,14 @@ drone::connectionstatus Bebop::tryConnecting()
 void Bebop::beforeUpdate()
 {
 	static int zero_packets_counter = 0;
+	static bool config_initialized = false;
+
+	// Initialize Bebop config on update loop start
+	if(!config_initialized)
+	{
+		_ctrllink->initConfig();
+		config_initialized = true;
+	}
 
 	// Poll data
 	int packets = _io_service->poll();
@@ -110,6 +118,7 @@ void Bebop::beforeUpdate()
 void Bebop::updateCycle()
 {
 	FPVDrone::updateCycle();
+	_ctrllink->processCommandQueue();
 }
 
 bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)

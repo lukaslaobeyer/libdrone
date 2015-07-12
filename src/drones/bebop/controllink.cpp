@@ -7,8 +7,12 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
+
 #include <thread>
 #include <chrono>
+#include <locale>
 
 using namespace bebop;
 
@@ -111,24 +115,48 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 
 	/////// INITIALIZE VIDEO DECODER ///////
 	_videodecoder.reset(new videodecoder(videoFragmentSize, videoMaxFragmentNumber));
+}
 
-	/*
-	// Flat trim
-	navdata_id flattrim_id = command_ids::flattrim;
-	vector<boost::any> ft_args = {};
-	sendCommand(flattrim_id, ft_args);*/
-
+void controllink::initConfig()
+{
 	// Enable video
 	navdata_id videoen_id = command_ids::enable_streaming;
 	vector<boost::any> vid_args = {(uint8_t) 1};
-	sendCommand(videoen_id, vid_args);
-	/*
-	navdata_id autotakeoff_id = command_ids::autotakeoff;
-	vector<boost::any> takeoff_args = {(uint8_t) 1};
-	sendCommand(autotakeoff_id, takeoff_args);
+	sendAckedCommand(videoen_id, vid_args, navdata_ids::streaming_state);
+
+	// Flat trim
+	navdata_id flattrim_id = command_ids::flattrim;
+	vector<boost::any> ft_args = {};
+	sendAckedCommand(flattrim_id, ft_args, navdata_ids::flattrim);
+
+	// Set time and date
+	navdata_id date_id = command_ids::setdate;
+	string date = boost::gregorian::to_iso_extended_string(boost::gregorian::day_clock::universal_day());
+	BOOST_LOG_TRIVIAL(debug) << date;
+	vector<boost::any> date_args = {date};
+	sendAckedCommand(date_id, date_args, navdata_ids::date);
+
+	navdata_id time_id = command_ids::settime;
+	boost::posix_time::ptime time = boost::posix_time::second_clock::universal_time();
+	boost::posix_time::time_facet *facet = new boost::posix_time::time_facet;
+	facet->format("T%H%M%S+0000");
+	stringstream timestream;
+	timestream.imbue(locale(locale::classic(), facet));
+	timestream << time;
+	string time_str = timestream.str();
+	BOOST_LOG_TRIVIAL(debug) << time_str;
+	vector<boost::any> time_args = {time_str};
+	sendAckedCommand(time_id, time_args, navdata_ids::time);
+
+	// Get Bebop status
 	navdata_id getstatus_id = command_ids::getstatus;
 	vector<boost::any> gs_args = {};
-	sendCommand(getstatus_id, gs_args);
+	sendAckedCommand(getstatus_id, gs_args, navdata_ids::all_states_sent);
+
+	// 720P?
+	/*navdata_id video720p_id = command_ids::stream_720p;
+	vector<boost::any> vid720p_args = {(uint64_t) 1 << 0};
+	sendCommand(video720p_id, vid720p_args);*/
 
 	/*navdata_id autorecord_id = command_ids::video_autorecord;
 	vector<boost::any> ar_args = {(uint8_t) 0, (uint8_t) 0};
@@ -169,7 +197,7 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			default:
-				cout << " UNKNOWN ID";
+				BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
 				break;
 			}
 
@@ -179,11 +207,11 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 			switch(_navdata_receivedDataBuffer[1])
 			{
 			case frameid::VIDEO_WITH_ACK:
-				decodeVideoPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				sendVideoAck(_navdata_receivedDataBuffer, bytes_transferred);
+				decodeVideoPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			default:
-				cout << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec << endl;
+				BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
 			}
 			break;
 		case frametype::DATA_WITH_ACK:
@@ -195,8 +223,11 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 				sendAck(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			default:
-				cout << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec << endl;
+				BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
 			}
+			break;
+		default:
+			BOOST_LOG_TRIVIAL(debug) << "UNKNOWN FRAMETYPE: 0x" << hex << (int) _navdata_receivedDataBuffer[0] << dec;
 			break;
 		}
 	}
@@ -306,6 +337,22 @@ void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 	seqNum++;
 }
 
+void controllink::sendAckedCommand(navdata_id command_id, vector<boost::any> args, navdata_id ack_id)
+{
+	_command_id_queue.push(command_id);
+	_command_arg_queue.push(args);
+	_ack_id_queue.push(ack_id);
+}
+
+void controllink::processCommandQueue()
+{
+	if(_command_id_queue.size() > 0 && !_ack_expected)
+	{
+		sendCommand(_command_id_queue.front(), _command_arg_queue.front());
+		_ack_expected = true;
+	}
+}
+
 shared_ptr<navdata> controllink::getNavdata()
 {
 	shared_ptr<navdata> navdata = make_shared<bebop::navdata>();
@@ -322,12 +369,49 @@ cv::Mat controllink::getVideoFrame()
 
 void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
 {
+	static int ackWaitCycles;
+
 	uint8_t  dataDevice = receivedDataBuffer[7]; // See the XML files in libARCommands of the official SDK
 	uint8_t  dataClass  = receivedDataBuffer[8];
 	uint16_t dataID     = receivedDataBuffer[10] << 8 | receivedDataBuffer[9];
 
 	navdata_id navdata_key{dataDevice, dataClass, dataID};
 
+	// Check for ack data if expected
+	if(_ack_expected)
+	{
+		if(navdata_key == _ack_id_queue.front())
+		{
+			// Expected ack packet received
+			_ack_id_queue.pop();
+			_command_arg_queue.pop();
+			_command_id_queue.pop();
+			_ack_expected = false;
+
+			ackWaitCycles = 0;
+
+			BOOST_LOG_TRIVIAL(debug) << "Ack received";
+		}
+		else
+		{
+			ackWaitCycles++;
+
+			if(ackWaitCycles >= MAX_ACK_WAIT_CYCLES)
+			{
+				BOOST_LOG_TRIVIAL(warning) << "No ack received! Packet ignored";
+
+				// Skip packet
+				_ack_id_queue.pop();
+				_command_arg_queue.pop();
+				_command_id_queue.pop();
+				_ack_expected = false;
+
+				ackWaitCycles = 0;
+			}
+		}
+	}
+
+	// Decode navdata
 	if(navdata_key == navdata_ids::wifi_rssi)
 	{
 		int16_t wifi_rssi; // in dBm
@@ -388,13 +472,13 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 	}
 	else if(navdata_key == navdata_ids::flattrim)
 	{
-		cout << "flat trim ack'd" << endl;
+		BOOST_LOG_TRIVIAL(debug) << "flat trim ack'd";
 	}
 	else if(navdata_key == navdata_ids::streaming_state)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		cout << "streaming state changed: " << (int) state << endl;
+		BOOST_LOG_TRIVIAL(debug) << "streaming state changed: " << (int) state;
 	}
 	else if(navdata_key == navdata_ids::flying_state)
 	{
@@ -413,23 +497,23 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		cout << "alert state changed: " << (int) state << endl;
+		BOOST_LOG_TRIVIAL(debug) << "alert state changed: " << (int) state;
 	}
 	else if(navdata_key == navdata_ids::picture_taken)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		cout << "picture taken? " << (int) state << endl;
+		BOOST_LOG_TRIVIAL(debug) << "picture taken? " << (int) state;
 	}
 	else if(navdata_key == navdata_ids::video_recording_state)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		cout << "video recording? " << (int) state << endl;
+		BOOST_LOG_TRIVIAL(debug) << "video recording? " << (int) state;
 	}
 	else
 	{
-		cout << "UNKNOWN NAVDATA: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID << endl;
+		BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID;
 	}
 }
 
@@ -487,6 +571,34 @@ vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::an
 			memcpy(&arg8, &arg, sizeof(uint16_t));
 			command.insert(command.end(), {arg8[0], arg8[1]});
 		}
+		else if(command_id.dataTypes[i] == 'i') // int32_t
+		{
+			int32_t arg = boost::any_cast<int32_t>(args[i]);
+			char arg8[4];
+			memcpy(&arg8, &arg, sizeof(int32_t));
+			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3]});
+		}
+		else if(command_id.dataTypes[i] == 'I') // uint32_t
+		{
+			uint32_t arg = boost::any_cast<uint32_t>(args[i]);
+			char arg8[4];
+			memcpy(&arg8, &arg, sizeof(uint32_t));
+			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3]});
+		}
+		else if(command_id.dataTypes[i] == 'l') // int64_t
+		{
+			int64_t arg = boost::any_cast<int64_t>(args[i]);
+			char arg8[8];
+			memcpy(&arg8, &arg, sizeof(int64_t));
+			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3], arg8[4], arg8[5], arg8[6], arg8[7]});
+		}
+		else if(command_id.dataTypes[i] == 'L') // uint64_t
+		{
+			uint64_t arg = boost::any_cast<uint64_t>(args[i]);
+			char arg8[8];
+			memcpy(&arg8, &arg, sizeof(uint64_t));
+			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3], arg8[4], arg8[5], arg8[6], arg8[7]});
+		}
 		else if(command_id.dataTypes[i] == 'f') // float
 		{
 			float arg = boost::any_cast<float>(args[i]);
@@ -500,6 +612,12 @@ vector<char> controllink::createCommand(navdata_id &command_id, vector<boost::an
 			char arg8[8];
 			memcpy(&arg8, &arg, sizeof(double));
 			command.insert(command.end(), {arg8[0], arg8[1], arg8[2], arg8[3], arg8[4], arg8[5], arg8[6], arg8[7]});
+		}
+		else if(command_id.dataTypes[i] == 's')
+		{
+			string arg = boost::any_cast<string>(args[i]);
+			copy(arg.begin(), arg.end(), back_inserter(command));
+			command.insert(command.end(), '\0');
 		}
 	}
 

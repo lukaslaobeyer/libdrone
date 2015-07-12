@@ -16,8 +16,13 @@ namespace bebop
 							   // B: uint8_t
 							   // h: int16_t
 							   // H: uint16_t
+							   // i: int32_t
+							   // I: uint32_t
+							   // l: int64_t
+							   // L: uint64_t
 							   // f: float
 							   // d: double
+							   // s: string (UTF-8, null terminated)
 
 		bool operator==(const navdata_id& rhs) const
 		{
@@ -65,8 +70,13 @@ namespace bebop
 
 	namespace navdata_ids
 	{
+		const navdata_id all_states_sent{0, 5, 0, ""};
+
 		const navdata_id wifi_rssi{0, 5, 7, "h"}; // in dBm
 		const navdata_id battery_status{0, 5, 1, "B"}; // Battery charge percentage
+
+		const navdata_id date{0, 5, 4, "s"}; // Date in ISO-8601 format
+		const navdata_id time{0, 5, 5, "s"}; // Time in ISO-8601 format
 
 		const navdata_id altitude{1, 4, 8, "d"}; // in meters
 		const navdata_id attitude{1, 4, 6, "fff"}; // roll, pitch, yaw
@@ -107,6 +117,9 @@ namespace bebop
 		const navdata_id getsettings{0, 2, 0, ""}; // Tell the drone to send back all settings
 		const navdata_id getstatus{0, 4, 0, ""}; // Tell the drone to send back all status information (battery charge, flying state, etc.)
 
+		const navdata_id setdate{0, 4, 1, "s"}; // Date in ISO-8601 format
+		const navdata_id settime{0, 4, 2, "s"}; // Time in ISO-8601 format
+
 		const navdata_id flattrim{1, 0, 0, ""};
 		const navdata_id takeoff{1, 0, 1, ""};
 		const navdata_id pcmd{1, 0, 2, "Bbbbbf"}; // 1: 1 to activate roll/pitch movement; 2-5: roll, pitch, yaw, gaz in range [-100:100]; 6: unused
@@ -140,6 +153,8 @@ namespace bebop
 
 		const navdata_id set_home{1, 23, 0, "ddd"}; // Latitude, longitude in decimal degrees; altitude in meters
 		const navdata_id reset_home{1, 23, 1, ""};
+
+		const navdata_id stream_720p{1, 32, 0, "L"};
 	}
 }
 

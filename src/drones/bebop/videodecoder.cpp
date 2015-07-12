@@ -82,7 +82,7 @@ bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 
 		if(receivedFrameCount % 100 == 0)
 		{
-			BOOST_LOG_TRIVIAL(info) << "Error rate: " << (float) errors/(float) receivedFrameCount * 100.0f << "% (total); " << (float) errors_rolling << "% (last 100 frames)";
+			BOOST_LOG_TRIVIAL(trace) << "Error rate: " << (float) errors/(float) receivedFrameCount * 100.0f << "% (total); " << (float) errors_rolling << "% (last 100 frames)";
 			errors_rolling = 0;
 		}
 	}
@@ -92,7 +92,7 @@ bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 
 bool videodecoder::initializeDecoder()
 {
-	cout << "Initializing decoders" << endl;
+	BOOST_LOG_TRIVIAL(debug) << "Initializing decoders";
 
 	av_register_all();
 	avcodec_register_all();

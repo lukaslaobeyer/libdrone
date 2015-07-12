@@ -1,6 +1,8 @@
 #ifndef LIBDRONE_BEBOP_CONTROLLINK_H
 #define LIBDRONE_BEBOP_CONTROLLINK_H
 
+#define MAX_ACK_WAIT_CYCLES 40
+
 #include <drones/bebop/constants.h>
 #include <types.h>
 #include <commands.h>
@@ -11,6 +13,7 @@
 #include <memory>
 #include <array>
 #include <vector>
+#include <queue>
 
 #include <boost/any.hpp>
 
@@ -34,8 +37,12 @@ namespace bebop
 			explicit controllink();
 			
 			void init(std::string ip, boost::asio::io_service &io_service);
+			void initConfig(); // Requires a running update loop
 			
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args);
+			void sendAckedCommand(navdata_id command_id, std::vector<boost::any> args, navdata_id ack_id);
+
+			void processCommandQueue();
 
 			std::shared_ptr<navdata> getNavdata();
 			cv::Mat getVideoFrame();
@@ -63,6 +70,12 @@ namespace bebop
     		d2cbuffer _navdata_receivedDataBuffer;
 
     		navdata _navdata;
+
+    		// Acked command stuff
+    		bool _ack_expected = false;
+    		std::queue<navdata_id> _ack_id_queue;
+    		std::queue<navdata_id> _command_id_queue;
+    		std::queue<std::vector<boost::any>> _command_arg_queue;
 	};
 }
 
