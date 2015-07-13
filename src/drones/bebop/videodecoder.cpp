@@ -221,7 +221,7 @@ bool videodecoder::decodeFrame(int frameSize)
 	else
 	{
 		// Error decoding frame
-		BOOST_LOG_TRIVIAL(info) << "Error decoding frame! len=" << len << "; got_frame=" << got_frame;
+		BOOST_LOG_TRIVIAL(trace) << "Error decoding frame! len=" << len << "; got_frame=" << got_frame;
 		return false;
 	}
 }

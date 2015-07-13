@@ -377,6 +377,8 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 
 	navdata_id navdata_key{dataDevice, dataClass, dataID};
 
+	bool is_ack = false;
+
 	// Check for ack data if expected
 	if(_ack_expected)
 	{
@@ -391,6 +393,7 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 			ackWaitCycles = 0;
 
 			BOOST_LOG_TRIVIAL(debug) << "Ack received";
+			is_ack = true;
 		}
 		else
 		{
@@ -463,6 +466,12 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 		_navdata.longitude = lon;
 		_navdata.gps_altitude = alt;
 	}
+	else if(navdata_key == navdata_ids::gps_fix)
+	{
+		uint8_t fix = _navdata_receivedDataBuffer[11];
+
+		BOOST_LOG_TRIVIAL(debug) << "GPS fix state changed: " << (int) fix;
+	}
 	else if(navdata_key == navdata_ids::camera_orientation)
 	{
 		int8_t tilt = _navdata_receivedDataBuffer[11];
@@ -470,15 +479,11 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 
 		_navdata.cameraorientation = Eigen::Vector2f(tilt, pan);
 	}
-	else if(navdata_key == navdata_ids::flattrim)
-	{
-		BOOST_LOG_TRIVIAL(debug) << "flat trim ack'd";
-	}
 	else if(navdata_key == navdata_ids::streaming_state)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		BOOST_LOG_TRIVIAL(debug) << "streaming state changed: " << (int) state;
+		BOOST_LOG_TRIVIAL(debug) << "Streaming state changed: " << (int) state;
 	}
 	else if(navdata_key == navdata_ids::flying_state)
 	{
@@ -497,21 +502,151 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		BOOST_LOG_TRIVIAL(debug) << "alert state changed: " << (int) state;
+		BOOST_LOG_TRIVIAL(debug) << "Alert state changed: " << (int) state;
 	}
 	else if(navdata_key == navdata_ids::picture_taken)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		BOOST_LOG_TRIVIAL(debug) << "picture taken? " << (int) state;
+		BOOST_LOG_TRIVIAL(debug) << "Picture taken? " << (int) state;
 	}
 	else if(navdata_key == navdata_ids::video_recording_state)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
 
-		BOOST_LOG_TRIVIAL(debug) << "video recording? " << (int) state;
+		BOOST_LOG_TRIVIAL(debug) << "Video recording? " << (int) state;
 	}
-	else
+	else if(navdata_key == navdata_ids::sensor_state)
+	{
+		uint8_t sensor = _navdata_receivedDataBuffer[11];
+		uint8_t state_err = _navdata_receivedDataBuffer[12];
+
+		if(!state_err)
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Sensor " << (int) sensor << " is OK";
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(fatal) << "Sensor " << (int) sensor << " reported as failing!";
+		}
+	}
+	else if(navdata_key == navdata_ids::magneto_calib_state)
+	{
+		uint8_t xAxisState = _navdata_receivedDataBuffer[11];
+		uint8_t yAxisState = _navdata_receivedDataBuffer[12];
+		uint8_t zAxisState = _navdata_receivedDataBuffer[13];
+		uint8_t failed = _navdata_receivedDataBuffer[14];
+
+		if(failed)
+		{
+			BOOST_LOG_TRIVIAL(warning) << "Mangetometer calibration failed!";
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Magnetometer X axis calibration state: " << (int) xAxisState;
+			BOOST_LOG_TRIVIAL(debug) << "Magnetometer Y axis calibration state: " << (int) yAxisState;
+			BOOST_LOG_TRIVIAL(debug) << "Magnetometer Z axis calibration state: " << (int) zAxisState;
+		}
+	}
+	else if(navdata_key == navdata_ids::magneto_calib_required)
+	{
+		uint8_t calib_req = _navdata_receivedDataBuffer[11];
+
+		if(calib_req)
+		{
+			BOOST_LOG_TRIVIAL(warning) << "Magnetometer calibration required!";
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Magnetometer calibration valid";
+		}
+	}
+	else if(navdata_key == navdata_ids::camera_fov)
+	{
+		float fov;
+		memcpy(&fov, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+
+		BOOST_LOG_TRIVIAL(debug) << "Camera FOV is " << fov << " degrees";
+	}
+	else if(navdata_key == navdata_ids::motor_version)
+	{
+		BOOST_LOG_TRIVIAL(debug) << "Received motor version";
+	}
+	else if(navdata_key == navdata_ids::motor_state)
+	{
+		uint8_t motor = _navdata_receivedDataBuffer[11];
+		uint8_t error = _navdata_receivedDataBuffer[12];
+
+		if(error)
+		{
+			BOOST_LOG_TRIVIAL(fatal) << "Motor reporting error! Code: " << (int) error;
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Motor OK";
+		}
+	}
+	else if(navdata_key == navdata_ids::motor_flightstatus)
+	{
+		BOOST_LOG_TRIVIAL(debug) << "Received motor flight status";
+	}
+	else if(navdata_key == navdata_ids::motor_previouserror)
+	{
+		uint8_t error = _navdata_receivedDataBuffer[11];
+
+		if(error)
+		{
+			BOOST_LOG_TRIVIAL(info) << "Motors reporting cause for previous error: " << (int) error;
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Motors OK";
+		}
+	}
+	else if(navdata_key == navdata_ids::home_changed)
+	{
+		double lat, lon, alt;
+		memcpy(&lat, &_navdata_receivedDataBuffer.data()[11], sizeof(double));
+		memcpy(&lon, &_navdata_receivedDataBuffer.data()[11 + 8], sizeof(double));
+		memcpy(&alt, &_navdata_receivedDataBuffer.data()[11 + 8*2], sizeof(double));
+
+		BOOST_LOG_TRIVIAL(debug) << "Bebop home set as " << lat << "; " << lon << " (" << alt << "m)";
+	}
+	else if(navdata_key == navdata_ids::massstorage_list)
+	{
+		uint8_t storage_id = _navdata_receivedDataBuffer[11];
+
+		BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " available";
+	}
+	else if(navdata_key == navdata_ids::massstorage_info)
+	{
+		uint8_t storage_id = _navdata_receivedDataBuffer[11];
+
+		uint32_t size, used_size;
+
+		memcpy(&size, &_navdata_receivedDataBuffer.data()[12], sizeof(uint32_t));
+		memcpy(&used_size, &_navdata_receivedDataBuffer.data()[12 + 4], sizeof(uint32_t));
+
+		uint8_t full = _navdata_receivedDataBuffer[20];
+		uint8_t internal = _navdata_receivedDataBuffer[21];
+
+		if(internal)
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " is internal";
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " is external";
+		}
+
+		if(full)
+		{
+			BOOST_LOG_TRIVIAL(warning) << "Mass storage with ID " << (int) storage_id << " is full!";
+		}
+
+		BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " used space is " << (int) used_size << "/" << (int) size << "MB";
+	}
+	else if(!is_ack)
 	{
 		BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID;
 	}

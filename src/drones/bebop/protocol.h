@@ -78,6 +78,21 @@ namespace bebop
 		const navdata_id date{0, 5, 4, "s"}; // Date in ISO-8601 format
 		const navdata_id time{0, 5, 5, "s"}; // Time in ISO-8601 format
 
+		const navdata_id sensor_state{0, 5, 8, "BB"};
+
+		const navdata_id magneto_calib_state{0, 14, 0, "BBBB"};
+		const navdata_id magneto_calib_required{0, 14, 1, "B"};
+
+		const navdata_id camera_fov{0, 15, 0, "f"};
+
+		const navdata_id massstorage_list{0, 5, 2, "Bs"};
+		const navdata_id massstorage_info{0, 5, 3, "BIIBBB"};
+
+		const navdata_id motor_state{1, 16, 2, "BB"};
+		const navdata_id motor_version{1, 16, 3, "s"};
+		const navdata_id motor_flightstatus{1, 16, 4, "HHI"};
+		const navdata_id motor_previouserror{1, 16, 5, "B"};
+
 		const navdata_id altitude{1, 4, 8, "d"}; // in meters
 		const navdata_id attitude{1, 4, 6, "fff"}; // roll, pitch, yaw
 		const navdata_id speed{1, 4, 5, "fff"}; // x, y, z in m/s
@@ -109,6 +124,7 @@ namespace bebop
 		const navdata_id picture_saturation{1, 20, 3, "fff"}; // current, min, max
 		const navdata_id video_autorecord{1, 20, 5, "BB"}; // 1: 1 if enabled, 2: mass storage ID
 
+		const navdata_id home_changed{1, 24, 0, "ddd"};
 		const navdata_id gps_fix{1, 24, 2, "B"}; // 1 if fix acquired
 	}
 
