@@ -119,22 +119,12 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 
 void controllink::initConfig()
 {
-	// Enable video
-	navdata_id videoen_id = command_ids::enable_streaming;
-	vector<boost::any> vid_args = {(uint8_t) 1};
-	sendAckedCommand(videoen_id, vid_args, navdata_ids::streaming_state);
-
-	// Flat trim
-	navdata_id flattrim_id = command_ids::flattrim;
-	vector<boost::any> ft_args = {};
-	sendAckedCommand(flattrim_id, ft_args, navdata_ids::flattrim);
-
 	// Set time and date
 	navdata_id date_id = command_ids::setdate;
 	string date = boost::gregorian::to_iso_extended_string(boost::gregorian::day_clock::universal_day());
 	BOOST_LOG_TRIVIAL(debug) << date;
 	vector<boost::any> date_args = {date};
-	sendAckedCommand(date_id, date_args, navdata_ids::date);
+	sendCommand(date_id, date_args);
 
 	navdata_id time_id = command_ids::settime;
 	boost::posix_time::ptime time = boost::posix_time::second_clock::universal_time();
@@ -146,12 +136,22 @@ void controllink::initConfig()
 	string time_str = timestream.str();
 	BOOST_LOG_TRIVIAL(debug) << time_str;
 	vector<boost::any> time_args = {time_str};
-	sendAckedCommand(time_id, time_args, navdata_ids::time);
+	sendCommand(time_id, time_args);
+
+	// Enable video
+	navdata_id videoen_id = command_ids::enable_streaming;
+	vector<boost::any> vid_args = {(uint8_t) 1};
+	sendCommand(videoen_id, vid_args);
+
+	// Flat trim
+	navdata_id flattrim_id = command_ids::flattrim;
+	vector<boost::any> ft_args = {};
+	sendCommand(flattrim_id, ft_args);
 
 	// Get Bebop status
 	navdata_id getstatus_id = command_ids::getstatus;
 	vector<boost::any> gs_args = {};
-	sendAckedCommand(getstatus_id, gs_args, navdata_ids::all_states_sent);
+	sendCommand(getstatus_id, gs_args);
 
 	// 720P?
 	/*navdata_id video720p_id = command_ids::stream_720p;
@@ -172,18 +172,20 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 {
 	if(!error)
 	{
+		uint8_t frametype = _navdata_receivedDataBuffer[0];
+		uint8_t frameid = _navdata_receivedDataBuffer[1];
 		uint8_t seqNum = _navdata_receivedDataBuffer[2];
 
 		uint32_t size;
 		memcpy(&size, &_navdata_receivedDataBuffer[3], sizeof(uint32_t));
 
 		// Find out type of data (see ARNETWORKAL_Frame.h in libARNetworkAL of the official SDK)
-		switch(_navdata_receivedDataBuffer[0])
+		switch(frametype)
 		{
 		case frametype::DATA:
 			// Regular data
 
-			switch(_navdata_receivedDataBuffer[1])
+			switch(frameid)
 			{
 			case frameid::PING:
 				// Request for pong packet
@@ -204,7 +206,7 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 			break;
 		case frametype::LOW_LATENCY:
 			// Low latency data
-			switch(_navdata_receivedDataBuffer[1])
+			switch(frameid)
 			{
 			case frameid::VIDEO_WITH_ACK:
 				sendVideoAck(_navdata_receivedDataBuffer, bytes_transferred);
@@ -216,7 +218,7 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 			break;
 		case frametype::DATA_WITH_ACK:
 			// Data with ack
-			switch(_navdata_receivedDataBuffer[1])
+			switch(frameid)
 			{
 			case frameid::NAVDATA_WITH_ACK:
 				decodeNavdataPacket(_navdata_receivedDataBuffer, bytes_transferred);
@@ -224,6 +226,18 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 				break;
 			default:
 				BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA ID: 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
+			}
+			break;
+		case frametype::ACK:
+			// Ack for command
+			switch(frameid)
+			{
+			case frameid::COMMAND_ACK_RESPONSE:
+				processAck(_navdata_receivedDataBuffer, bytes_transferred);
+				break;
+			default:
+				BOOST_LOG_TRIVIAL(debug) << "GOT ACK AS FRAMETYPE BUT UNKNOWN ID 0x" << hex << (int) _navdata_receivedDataBuffer[1] << dec;
+				break;
 			}
 			break;
 		default:
@@ -317,7 +331,60 @@ void controllink::sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_recei
 	seqNum++;
 }
 
+void controllink::processAck(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
+{
+	static int ackWaitCycles;
+
+	uint8_t ack_seqNum = receivedDataBuffer[7];
+
+	// Check for ack data if expected
+	if(_ack_expected)
+	{
+		if(ack_seqNum == _ack_seqNum_queue.front())
+		{
+			// Expected ack packet received
+			_command_arg_queue.pop();
+			_command_id_queue.pop();
+			_ack_seqNum_queue.pop();
+			_ack_expected = false;
+
+			ackWaitCycles = 0;
+
+			BOOST_LOG_TRIVIAL(debug) << "Ack received";
+		}
+		else
+		{
+			ackWaitCycles++;
+
+			if(ackWaitCycles >= MAX_ACK_WAIT_CYCLES)
+			{
+				BOOST_LOG_TRIVIAL(warning) << "No ack received! Packet ignored";
+
+				// Skip packet
+				_command_arg_queue.pop();
+				_command_id_queue.pop();
+				_ack_seqNum_queue.pop();
+				_ack_expected = false;
+
+				ackWaitCycles = 0;
+			}
+		}
+	}
+}
+
 void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
+{
+	if(command_id.acked)
+	{
+		sendAckedCommand(command_id, args);
+	}
+	else
+	{
+		sendCommand(command_id, args, false);
+	}
+}
+
+void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args, bool ack)
 {
 	// Send a command. The command_id is combined with the packet header to form a command header, then data is extracted from the
 	// arguments passed with &args and sent to the c2d port.
@@ -325,9 +392,18 @@ void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 	static uint8_t seqNum = 0;
 
 	frameheader header;
-	header.type = frametype::DATA;
-	header.id = frameid::COMMAND;
-	header.seq = seqNum;
+	if(ack)
+	{
+		header.type = frametype::DATA_WITH_ACK;
+		header.id = frameid::COMMAND_WITH_ACK;
+		header.seq = _ack_seqNum_queue.front();
+	}
+	else
+	{
+		header.type = frametype::DATA;
+		header.id = frameid::COMMAND;
+		header.seq = seqNum;
+	}
 
 	vector<char> command = createCommand(command_id, args);
 	vector<char> packet = assemblePacket(header, command);
@@ -337,18 +413,22 @@ void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 	seqNum++;
 }
 
-void controllink::sendAckedCommand(navdata_id command_id, vector<boost::any> args, navdata_id ack_id)
+void controllink::sendAckedCommand(navdata_id &command_id, vector<boost::any> &args)
 {
+	static uint8_t ack_seqNum = 0; // Acked commands use their own sequence number
+
 	_command_id_queue.push(command_id);
 	_command_arg_queue.push(args);
-	_ack_id_queue.push(ack_id);
+	_ack_seqNum_queue.push(ack_seqNum);
+
+	ack_seqNum++;
 }
 
 void controllink::processCommandQueue()
 {
 	if(_command_id_queue.size() > 0 && !_ack_expected)
 	{
-		sendCommand(_command_id_queue.front(), _command_arg_queue.front());
+		sendCommand(_command_id_queue.front(), _command_arg_queue.front(), true);
 		_ack_expected = true;
 	}
 }
@@ -369,50 +449,11 @@ cv::Mat controllink::getVideoFrame()
 
 void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
 {
-	static int ackWaitCycles;
-
 	uint8_t  dataDevice = receivedDataBuffer[7]; // See the XML files in libARCommands of the official SDK
 	uint8_t  dataClass  = receivedDataBuffer[8];
 	uint16_t dataID     = receivedDataBuffer[10] << 8 | receivedDataBuffer[9];
 
 	navdata_id navdata_key{dataDevice, dataClass, dataID};
-
-	bool is_ack = false;
-
-	// Check for ack data if expected
-	if(_ack_expected)
-	{
-		if(navdata_key == _ack_id_queue.front())
-		{
-			// Expected ack packet received
-			_ack_id_queue.pop();
-			_command_arg_queue.pop();
-			_command_id_queue.pop();
-			_ack_expected = false;
-
-			ackWaitCycles = 0;
-
-			BOOST_LOG_TRIVIAL(debug) << "Ack received";
-			is_ack = true;
-		}
-		else
-		{
-			ackWaitCycles++;
-
-			if(ackWaitCycles >= MAX_ACK_WAIT_CYCLES)
-			{
-				BOOST_LOG_TRIVIAL(warning) << "No ack received! Packet ignored";
-
-				// Skip packet
-				_ack_id_queue.pop();
-				_command_arg_queue.pop();
-				_command_id_queue.pop();
-				_ack_expected = false;
-
-				ackWaitCycles = 0;
-			}
-		}
-	}
 
 	// Decode navdata
 	if(navdata_key == navdata_ids::wifi_rssi)
@@ -630,7 +671,7 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 		uint8_t full = _navdata_receivedDataBuffer[20];
 		uint8_t internal = _navdata_receivedDataBuffer[21];
 
-		if(internal)
+		if(internal == 0)
 		{
 			BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " is internal";
 		}
@@ -639,14 +680,14 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 			BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " is external";
 		}
 
-		if(full)
+		if(full == 0)
 		{
 			BOOST_LOG_TRIVIAL(warning) << "Mass storage with ID " << (int) storage_id << " is full!";
 		}
 
 		BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " used space is " << (int) used_size << "/" << (int) size << "MB";
 	}
-	else if(!is_ack)
+	else
 	{
 		BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID;
 	}

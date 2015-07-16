@@ -40,7 +40,6 @@ namespace bebop
 			void initConfig(); // Requires a running update loop
 			
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args);
-			void sendAckedCommand(navdata_id command_id, std::vector<boost::any> args, navdata_id ack_id);
 
 			void processCommandQueue();
 
@@ -51,12 +50,17 @@ namespace bebop
 			static frameheaderbuf createHeader(frameheader &header);
 			static std::vector<char> assemblePacket(frameheader &header, std::vector<char> &payload);
 		private:
+			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args, bool ack);
+			void sendAckedCommand(navdata_id &command_id, std::vector<boost::any> &args);
+
 			void startReceivingNavdata();
 			void navdataPacketReceived(const boost::system::error_code &error, std::size_t bytes_transferred);
 
 			void sendPong(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
 			void sendAck(d2cbuffer &receivedDataBuffer, size_t bytes_received);
 			void sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_received);
+
+			void processAck(d2cbuffer &receivedDataBuffer, size_t bytes_transferred);
 
 			void decodeNavdataPacket(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
 			bool decodeVideoPacket(d2cbuffer &receivedDataBuffer, std::size_t bytes_transferred);
@@ -73,7 +77,7 @@ namespace bebop
 
     		// Acked command stuff
     		bool _ack_expected = false;
-    		std::queue<navdata_id> _ack_id_queue;
+    		std::queue<uint8_t> _ack_seqNum_queue;
     		std::queue<navdata_id> _command_id_queue;
     		std::queue<std::vector<boost::any>> _command_arg_queue;
 	};
