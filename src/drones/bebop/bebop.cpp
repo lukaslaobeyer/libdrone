@@ -1,6 +1,8 @@
 #include <drones/bebop/bebop.h>
 #include <drones/bebop/commands.h>
 
+#include <boost/log/trivial.hpp>
+
 #include "protocol.h"
 #include "commandcomposer.h"
 
@@ -23,6 +25,9 @@ drone::limits Bebop::getLimits()
 {
 	//TODO: this
 	drone::limits limits;
+	limits.angle = 0;
+	limits.vspeed = 0;
+	limits.yawspeed = 0;
 	return limits;
 }
 
