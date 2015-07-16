@@ -138,6 +138,11 @@ void controllink::initConfig()
 	vector<boost::any> time_args = {time_str};
 	sendCommand(time_id, time_args);
 
+	// Get Bebop status
+	navdata_id getstatus_id = command_ids::getstatus;
+	vector<boost::any> gs_args = {};
+	sendCommand(getstatus_id, gs_args);
+
 	// Enable video
 	navdata_id videoen_id = command_ids::enable_streaming;
 	vector<boost::any> vid_args = {(uint8_t) 1};
@@ -148,10 +153,10 @@ void controllink::initConfig()
 	vector<boost::any> ft_args = {};
 	sendCommand(flattrim_id, ft_args);
 
-	// Get Bebop status
-	navdata_id getstatus_id = command_ids::getstatus;
-	vector<boost::any> gs_args = {};
-	sendCommand(getstatus_id, gs_args);
+	// Tell the Bebop the controll application enters piloting mode (Whatever that does, Parrot! FreeFlight does it so I'll do it here, too.)
+	navdata_id pilotingmode_id = command_ids::piloting_mode;
+	vector<boost::any> pm_args = {(uint8_t) 1};
+	sendCommand(pilotingmode_id, pm_args);
 
 	// 720P?
 	/*navdata_id video720p_id = command_ids::stream_720p;
@@ -311,8 +316,6 @@ void controllink::sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_recei
 		highPacketsAck |= ((uint64_t) 1 << ((uint64_t) fragmentIndex - (uint64_t) 64));
 	}
 
-	//BOOST_LOG_TRIVIAL(trace) << bitset<64>(highPacketsAck) << "; " << bitset<64>(lowPacketsAck);
-
 	// Prepare the packet for sending
 	frameheader header;
 	header.type = frametype::DATA;
@@ -333,8 +336,6 @@ void controllink::sendVideoAck(d2cbuffer &receivedDataBuffer, size_t bytes_recei
 
 void controllink::processAck(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
 {
-	static int ackWaitCycles;
-
 	uint8_t ack_seqNum = receivedDataBuffer[7];
 
 	// Check for ack data if expected
@@ -348,27 +349,12 @@ void controllink::processAck(d2cbuffer &receivedDataBuffer, size_t bytes_transfe
 			_ack_seqNum_queue.pop();
 			_ack_expected = false;
 
-			ackWaitCycles = 0;
-
 			BOOST_LOG_TRIVIAL(debug) << "Ack received";
 		}
-		else
-		{
-			ackWaitCycles++;
-
-			if(ackWaitCycles >= MAX_ACK_WAIT_CYCLES)
-			{
-				BOOST_LOG_TRIVIAL(warning) << "No ack received! Packet ignored";
-
-				// Skip packet
-				_command_arg_queue.pop();
-				_command_id_queue.pop();
-				_ack_seqNum_queue.pop();
-				_ack_expected = false;
-
-				ackWaitCycles = 0;
-			}
-		}
+	}
+	else
+	{
+		BOOST_LOG_TRIVIAL(debug) << "Got unexpected ack!";
 	}
 }
 
@@ -426,10 +412,36 @@ void controllink::sendAckedCommand(navdata_id &command_id, vector<boost::any> &a
 
 void controllink::processCommandQueue()
 {
+	static int ackWaitCycles = 0;
+
 	if(_command_id_queue.size() > 0 && !_ack_expected)
 	{
 		sendCommand(_command_id_queue.front(), _command_arg_queue.front(), true);
 		_ack_expected = true;
+		ackWaitCycles = 0;
+	}
+
+	if(_ack_expected)
+	{
+		ackWaitCycles++;
+
+		if(ackWaitCycles % ACK_RETRY_CYCLES == 0)
+		{
+			BOOST_LOG_TRIVIAL(debug) << "No ack received yet. Resending command.";
+			sendCommand(_command_id_queue.front(), _command_arg_queue.front(), true);
+		}
+		else if(ackWaitCycles >= ACK_IGNORE_CYCLES)
+		{
+			BOOST_LOG_TRIVIAL(warning) << "No ack received! Packet ignored.";
+
+			// Skip packet
+			_command_arg_queue.pop();
+			_command_id_queue.pop();
+			_ack_seqNum_queue.pop();
+			_ack_expected = false;
+
+			ackWaitCycles = 0;
+		}
 	}
 }
 

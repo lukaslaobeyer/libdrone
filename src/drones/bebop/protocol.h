@@ -141,6 +141,8 @@ namespace bebop
 		const navdata_id setdate{0, 4, 1, "s", true}; // Date in ISO-8601 format
 		const navdata_id settime{0, 4, 2, "s", true}; // Time in ISO-8601 format
 
+		const navdata_id piloting_mode{0, 8, 0, "B", true}; // 1 to enable piloting mode, 0 to disable
+
 		const navdata_id flattrim{1, 0, 0, "", true};
 		const navdata_id takeoff{1, 0, 1, "", true};
 		const navdata_id pcmd{1, 0, 2, "Bbbbbf", false}; // 1: 1 to activate roll/pitch movement; 2-5: roll, pitch, yaw, gaz in range [-100:100]; 6: unused

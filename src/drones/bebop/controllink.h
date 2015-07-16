@@ -1,7 +1,8 @@
 #ifndef LIBDRONE_BEBOP_CONTROLLINK_H
 #define LIBDRONE_BEBOP_CONTROLLINK_H
 
-#define MAX_ACK_WAIT_CYCLES 40
+#define ACK_RETRY_CYCLES 5 // Retry sending acked command every 5 cycles
+#define ACK_IGNORE_CYCLES 20 // Give up after 20 cycles
 
 #include <drones/bebop/constants.h>
 #include <types.h>
