@@ -44,6 +44,8 @@ class Bebop : public FPVDrone
 		std::unique_ptr<boost::asio::io_service> _io_service = nullptr;
 		drone::command _lastAttitudeCommand = drone::commands::attitude();
 
+		drone::limits _defaultLimits{0.2f, 3.5f, 1.2f, 5.0f};
+
 		bool _recording = false;
 };
 

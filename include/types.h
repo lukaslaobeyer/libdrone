@@ -25,6 +25,7 @@ namespace drone
 	    float angle; // Maximum pitch and roll angle in radians
 	    float yawspeed; // Maximum yaw (rotation) speed in radians/second
 	    float vspeed; // Maximum vertical speed in m/s
+	    float altitude; // Maximum altitude in m
 	};
 
 	enum connectionstatus

@@ -168,6 +168,25 @@ void controllink::initConfig()
 	sendCommand(autorecord_id, ar_args);*/
 }
 
+void controllink::setFlightSettings(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed)
+{
+	navdata_id max_altitude_id = command_ids::max_altitude;
+	vector<boost::any> max_altitude_args = {max_altitude};
+	sendCommand(max_altitude_id, max_altitude_args);
+
+	navdata_id max_tilt_id = command_ids::max_tilt;
+	vector<boost::any> max_tilt_args = {(float) (max_tilt * (180.0f / M_PI))};
+	sendCommand(max_tilt_id, max_tilt_args);
+
+	navdata_id max_vspeed_id = command_ids::max_vertical_speed;
+	vector<boost::any> max_vspeed_args = {max_vertical_speed};
+	sendCommand(max_vspeed_id, max_vspeed_args);
+
+	navdata_id max_yaw_speed_id = command_ids::max_rotation_speed;
+	vector<boost::any> max_yaw_speed_args = {(float) (max_yaw_speed * (180.0f / M_PI))};
+	sendCommand(max_yaw_speed_id, max_yaw_speed_args);
+}
+
 void controllink::startReceivingNavdata()
 {
 	_d2c_socket->async_receive_from(boost::asio::buffer(_navdata_receivedDataBuffer), _navdata_sender_endpoint, boost::bind(&controllink::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));

@@ -23,12 +23,7 @@ void Bebop::setIP(string ip)
 
 drone::limits Bebop::getLimits()
 {
-	//TODO: this
-	drone::limits limits;
-	limits.angle = 0;
-	limits.vspeed = 0;
-	limits.yawspeed = 0;
-	return limits;
+	return _defaultLimits;
 }
 
 void Bebop::takePicture()
@@ -95,6 +90,7 @@ void Bebop::beforeUpdate()
 	if(!config_initialized)
 	{
 		_ctrllink->initConfig();
+		_ctrllink->setFlightSettings(_defaultLimits.altitude, _defaultLimits.angle, _defaultLimits.vspeed, _defaultLimits.yawspeed);
 		config_initialized = true;
 	}
 

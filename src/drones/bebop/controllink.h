@@ -40,6 +40,11 @@ namespace bebop
 			void init(std::string ip, boost::asio::io_service &io_service);
 			void initConfig(); // Requires a running update loop
 			
+			void setFlightSettings(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed); // Max altitude in m,
+			                                                                                                           // Max tilt in radians,
+			                                                                                                           // Max vertical speed in m/s,
+			                                                                                                           // Max yaw speed in rad/s
+
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args);
 
 			void processCommandQueue();
