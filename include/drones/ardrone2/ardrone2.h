@@ -16,6 +16,7 @@
 
 #include <string>
 #include <stdexcept>
+#include <mutex>
 
 #include <boost/asio.hpp>
 
@@ -28,6 +29,9 @@ class ARDrone2 : public FPVDrone
 		void setIP(std::string ip);
 
 		drone::limits getLimits();
+		drone::config getConfig();
+		void setLimits(drone::limits limits);
+		void setConfig(drone::config config);
 
 		void takePicture();
 		bool isRecording();
@@ -55,9 +59,16 @@ class ARDrone2 : public FPVDrone
 
 		int _default_codec = ardrone2::config::codec::H264_360P;
 
+		std::mutex _cmdmutex;
+
 		std::vector<ATCommand> _commandqueue;
 
 		AttitudeCommand _latestAttitudeCommand;
+
+		drone::limits _defaultLimits{0.2f, 2.0f, 1.2f, 5.0f};
+		drone::limits _currentLimits{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
+
+		bool _outdoor = false;
 
 		bool _flying = false;
 		bool _recording = false;

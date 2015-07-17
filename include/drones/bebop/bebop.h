@@ -12,6 +12,8 @@
 
 #include <string>
 #include <memory>
+#include <limits>
+#include <cmath>
 
 class Bebop : public FPVDrone
 {
@@ -22,6 +24,9 @@ class Bebop : public FPVDrone
 		void setIP(std::string ip);
 
 		drone::limits getLimits();
+		drone::config getConfig();
+		void setLimits(drone::limits limits);
+		void setConfig(drone::config config);
 
 		void takePicture();
 		bool isRecording();
@@ -44,7 +49,9 @@ class Bebop : public FPVDrone
 		std::unique_ptr<boost::asio::io_service> _io_service = nullptr;
 		drone::command _lastAttitudeCommand = drone::commands::attitude();
 
-		drone::limits _defaultLimits{0.2f, 3.5f, 1.2f, 5.0f};
+		drone::config _defaultConfig{drone::limits{0.2f, 2.0f, 1.2f, 5.0f}, false, true};
+
+		bool _outdoor = false;
 
 		bool _recording = false;
 };

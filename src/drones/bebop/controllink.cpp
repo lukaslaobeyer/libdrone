@@ -168,7 +168,7 @@ void controllink::initConfig()
 	sendCommand(autorecord_id, ar_args);*/
 }
 
-void controllink::setFlightSettings(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed)
+void controllink::setLimits(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed)
 {
 	navdata_id max_altitude_id = command_ids::max_altitude;
 	vector<boost::any> max_altitude_args = {max_altitude};
@@ -185,6 +185,29 @@ void controllink::setFlightSettings(float max_altitude, float max_tilt, float ma
 	navdata_id max_yaw_speed_id = command_ids::max_rotation_speed;
 	vector<boost::any> max_yaw_speed_args = {(float) (max_yaw_speed * (180.0f / M_PI))};
 	sendCommand(max_yaw_speed_id, max_yaw_speed_args);
+}
+
+void controllink::setConfig(drone::config config)
+{
+	if(config.valid)
+	{
+		setLimits(config.limits.altitude, config.limits.angle, config.limits.vspeed, config.limits.yawspeed);
+
+		navdata_id outdoor_id = command_ids::outdoor_flight;
+		vector<boost::any> outdoor_args = {(uint8_t) 0};
+
+		navdata_id hull_id = command_ids::hull_protection;
+		vector<boost::any> hull_args = {(uint8_t) 1};
+
+		if(config.outdoor)
+		{
+			outdoor_args[0] = (uint8_t) 1;
+			hull_args[1] = (uint8_t) 0;
+		}
+
+		sendCommand(outdoor_id, outdoor_args);
+		sendCommand(hull_id, hull_args);
+	}
 }
 
 void controllink::startReceivingNavdata()
@@ -233,7 +256,7 @@ void controllink::navdataPacketReceived(const boost::system::error_code &error, 
 			switch(frameid)
 			{
 			case frameid::VIDEO_WITH_ACK:
-				sendVideoAck(_navdata_receivedDataBuffer, bytes_transferred);
+				//sendVideoAck(_navdata_receivedDataBuffer, bytes_transferred); // No ack needed for firmware versions 2.0.29 and up
 				decodeVideoPacket(_navdata_receivedDataBuffer, bytes_transferred);
 				break;
 			default:
@@ -379,6 +402,8 @@ void controllink::processAck(d2cbuffer &receivedDataBuffer, size_t bytes_transfe
 
 void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 {
+	_cmdmutex.lock();
+
 	if(command_id.acked)
 	{
 		sendAckedCommand(command_id, args);
@@ -387,6 +412,8 @@ void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args)
 	{
 		sendCommand(command_id, args, false);
 	}
+
+	_cmdmutex.unlock();
 }
 
 void controllink::sendCommand(navdata_id &command_id, vector<boost::any> &args, bool ack)
@@ -476,6 +503,11 @@ shared_ptr<navdata> controllink::getNavdata()
 cv::Mat controllink::getVideoFrame()
 {
 	return _videodecoder->getLatestFrame();
+}
+
+drone::limits controllink::getLimits()
+{
+	return _currentLimits;
 }
 
 void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t bytes_transferred)
@@ -717,6 +749,46 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 		}
 
 		BOOST_LOG_TRIVIAL(debug) << "Mass storage with ID " << (int) storage_id << " used space is " << (int) used_size << "/" << (int) size << "MB";
+	}
+	else if(navdata_key == navdata_ids::max_altitude)
+	{
+		float max_altitude;
+
+		memcpy(&max_altitude, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+
+		_currentLimits.altitude = max_altitude;
+
+		BOOST_LOG_TRIVIAL(debug) << "Maximum allowed altitude: " << max_altitude << " m";
+	}
+	else if(navdata_key == navdata_ids::max_tilt)
+	{
+		float max_tilt;
+
+		memcpy(&max_tilt, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+
+		_currentLimits.angle = max_tilt / (180.0f/M_PI);
+
+		BOOST_LOG_TRIVIAL(debug) << "Maximum allowed tilt: " << max_tilt << " deg / " << max_tilt / (180.0f/M_PI) << " rad";
+	}
+	else if(navdata_key == navdata_ids::max_rotation_speed)
+	{
+		float max_yaw_speed;
+
+		memcpy(&max_yaw_speed, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+
+		_currentLimits.yawspeed = max_yaw_speed / (180.0f/M_PI);
+
+		BOOST_LOG_TRIVIAL(debug) << "Maximum allowed rotation (yaw) speed: " << max_yaw_speed << " deg/s / " << max_yaw_speed / (180.0f/M_PI) << " rad/s";
+	}
+	else if(navdata_key == navdata_ids::max_vertical_speed)
+	{
+		float max_vertical_speed;
+
+		memcpy(&max_vertical_speed, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+
+		_currentLimits.vspeed = max_vertical_speed;
+
+		BOOST_LOG_TRIVIAL(debug) << "Maximum allowed vertical speed: " << max_vertical_speed << " m/s";
 	}
 	else
 	{

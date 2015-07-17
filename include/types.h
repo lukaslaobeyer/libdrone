@@ -28,6 +28,13 @@ namespace drone
 	    float altitude; // Maximum altitude in m
 	};
 
+	struct config
+	{
+		drone::limits limits; // Limits as defined above
+		bool outdoor; // True for outdoor flight, false for indoor flight
+		bool valid; // Utility flag signaling whether the configuration contained here is valid or not
+	};
+
 	enum connectionstatus
 	{
 		CONNECTION_ESTABLISHED,

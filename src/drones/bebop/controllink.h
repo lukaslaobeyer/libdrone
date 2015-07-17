@@ -15,6 +15,9 @@
 #include <array>
 #include <vector>
 #include <queue>
+#include <limits>
+#include <cmath>
+#include <mutex>
 
 #include <boost/any.hpp>
 
@@ -40,10 +43,11 @@ namespace bebop
 			void init(std::string ip, boost::asio::io_service &io_service);
 			void initConfig(); // Requires a running update loop
 			
-			void setFlightSettings(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed); // Max altitude in m,
-			                                                                                                           // Max tilt in radians,
-			                                                                                                           // Max vertical speed in m/s,
-			                                                                                                           // Max yaw speed in rad/s
+			void setLimits(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed); // Max altitude in m,
+			                                                                                                   // Max tilt in radians,
+			                                                                                                   // Max vertical speed in m/s,
+			                                                                                                   // Max yaw speed in rad/s
+			void setConfig(drone::config config);
 
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args);
 
@@ -51,6 +55,7 @@ namespace bebop
 
 			std::shared_ptr<navdata> getNavdata();
 			cv::Mat getVideoFrame();
+			drone::limits getLimits();
 
 			static std::vector<char> createCommand(navdata_id &command_id, std::vector<boost::any> &args);
 			static frameheaderbuf createHeader(frameheader &header);
@@ -80,6 +85,10 @@ namespace bebop
     		d2cbuffer _navdata_receivedDataBuffer;
 
     		navdata _navdata;
+
+    		drone::limits _currentLimits{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
+
+    		std::mutex _cmdmutex;
 
     		// Acked command stuff
     		bool _ack_expected = false;

@@ -16,6 +16,8 @@
 #include "atcommands/zapcommand.h"
 
 #include <iostream>
+#include <limits>
+#include <cmath>
 
 #include <boost/filesystem.hpp>
 
@@ -32,10 +34,88 @@ void ARDrone2::setIP(string ip)
 
 drone::limits ARDrone2::getLimits()
 {
-    //TODO: this
-    drone::limits limits;
+	if(isnan(_currentLimits.altitude) || isnan(_currentLimits.angle) || isnan(_currentLimits.vspeed) || isnan(_currentLimits.yawspeed))
+	{
+		return _defaultLimits;
+	}
+	else
+	{
+		return _currentLimits;
+	}
+}
 
-    return limits;
+drone::config ARDrone2::getConfig()
+{
+	drone::config config;
+
+	config.limits = getLimits();
+	config.outdoor = _outdoor;
+	config.valid = true;
+
+	return config;
+}
+
+void ARDrone2::setLimits(drone::limits limits)
+{
+	//TODO: De-uglify this
+
+	_currentLimits = limits;
+
+	string config_tilt = to_string((float) M_PI/2.0f);
+	string max_altitude = to_string(limits.altitude);
+	string max_angle = to_string(limits.angle);
+	string max_vspeed = to_string(limits.vspeed);
+	string max_yawspeed = to_string(limits.yawspeed);
+
+	// Decimal separator needs to be a dot (to_string seems to recognize the current locale)
+	replace(config_tilt.begin(), config_tilt.end(), ',', '.');
+	replace(max_altitude.begin(), max_altitude.end(), ',', '.');
+	replace(max_angle.begin(), max_angle.end(), ',', '.');
+	replace(max_vspeed.begin(), max_vspeed.end(), ',', '.');
+	replace(max_yawspeed.begin(), max_yawspeed.end(), ',', '.');
+
+	vector<ATCommand> configCommands {
+		ConfigIDSCommand(), ConfigCommand("control:control_iphone_tilt", config_tilt),
+		ConfigIDSCommand(), ConfigCommand("control:altitude_max", max_altitude),
+		ConfigIDSCommand(), ConfigCommand("control:euler_angle_max", max_angle),
+		ConfigIDSCommand(), ConfigCommand("control:control_vz_max", max_vspeed),
+		ConfigIDSCommand(), ConfigCommand("control:control_yaw", max_yawspeed)
+	};
+
+	_cmdmutex.lock();
+	_commandqueue.insert(_commandqueue.end(), configCommands.begin(), configCommands.end());
+	_cmdmutex.unlock();
+}
+
+void ARDrone2::setConfig(drone::config config)
+{
+	if(config.valid)
+	{
+		setLimits(config.limits);
+
+		vector<ATCommand> configCommands {
+			ConfigIDSCommand()
+		};
+
+		_outdoor = config.outdoor;
+
+		if(config.outdoor)
+		{
+			configCommands.push_back(ConfigCommand("control:outdoor", "TRUE"));
+			configCommands.push_back(ConfigIDSCommand());
+			configCommands.push_back(ConfigCommand("control:flight_without_shell", "TRUE"));
+		}
+		else
+		{
+			configCommands.push_back(ConfigCommand("control:outdoor", "FALSE"));
+			configCommands.push_back(ConfigIDSCommand());
+			configCommands.push_back(ConfigCommand("control:flight_without_shell", "FALSE"));
+		}
+
+		_cmdmutex.lock();
+		_commandqueue.insert(_commandqueue.end(), configCommands.begin(), configCommands.end());
+		_cmdmutex.unlock();
+	}
 }
 
 void ARDrone2::takePicture()
@@ -273,7 +353,9 @@ bool ARDrone2::processCommand(drone::command &command)
 
             _latestAttitudeCommand = AttitudeCommand(phi, theta, gaz, yaw);
 
-    		_commandqueue.push_back(_latestAttitudeCommand);
+            _cmdmutex.lock();
+            _commandqueue.push_back(_latestAttitudeCommand);
+            _cmdmutex.unlock();
 		}
 		break;
 	case drone::commands::id::ATTITUDEREL:
@@ -290,34 +372,46 @@ bool ARDrone2::processCommand(drone::command &command)
 
 			_latestAttitudeCommand = AttitudeCommand(phi, theta, gaz, yaw);
 
+			_cmdmutex.lock();
 			_commandqueue.push_back(_latestAttitudeCommand);
+			_cmdmutex.unlock();
 		}
 		break;
 	case drone::commands::id::EMERGENCY:
 	    {
-	        _commandqueue.push_back(EmergencyCommand(true));
+	    	_cmdmutex.lock();
+	    	_commandqueue.push_back(EmergencyCommand(true));
+	    	_cmdmutex.unlock();
 	    }
 	    break;
 	case drone::commands::id::FTTRIM:
 	    {
-	        _commandqueue.push_back(FlatTrimCommand());
+	    	_cmdmutex.lock();
+	    	_commandqueue.push_back(FlatTrimCommand());
+	    	_cmdmutex.unlock();
 	    }
 	    break;
 	case drone::commands::id::LAND:
 	    {
-	        _commandqueue.push_back(LandCommand());
+	    	_cmdmutex.lock();
+	    	_commandqueue.push_back(LandCommand());
+	    	_cmdmutex.unlock();
 			_flying = false;
 	    }
 	    break;
 	case drone::commands::id::TAKEOFF:
 	    {
-	        _commandqueue.push_back(TakeOffCommand());
+	    	_cmdmutex.lock();
+	    	_commandqueue.push_back(TakeOffCommand());
+	    	_cmdmutex.unlock();
 	    }
 	    break;
 	// AR.Drone 2.0 specific commands:
 	case ardrone2::commands::id::MAGNETOCALIB:
 	    {
-	        _commandqueue.push_back(MagnetometerCalibrationCommand());
+	    	_cmdmutex.lock();
+	    	_commandqueue.push_back(MagnetometerCalibrationCommand());
+	    	_cmdmutex.unlock();
 	    }
 	    break;
 	case ardrone2::commands::id::CONFIG:
@@ -325,14 +419,18 @@ bool ARDrone2::processCommand(drone::command &command)
 	        string key = boost::any_cast<string>(command.parameters[0]);
 	        string value = boost::any_cast<string>(command.parameters[1]);
 
+	        _cmdmutex.lock();
 	        _commandqueue.push_back(ConfigCommand(key, value));
+	        _cmdmutex.unlock();
 	    }
 	    break;
 	case ardrone2::commands::id::RECORDONUSB:
 	    {
 	        bool record = boost::any_cast<bool>(command.parameters[0]);
 
+	        _cmdmutex.lock();
 	        _commandqueue.push_back(RecordOnUSBCommand(record));
+	        _cmdmutex.unlock();
 	    }
 	    break;
 	case ardrone2::commands::id::SWITCHVIEW:
@@ -343,7 +441,10 @@ bool ARDrone2::processCommand(drone::command &command)
 	        {
 	            front = true;
 	        }
+
+	        _cmdmutex.lock();
 	        _commandqueue.push_back(ZapCommand(front));
+	        _cmdmutex.unlock();
 	    }
 	    break;
 	case ardrone2::commands::id::FLIP:
@@ -366,7 +467,9 @@ bool ARDrone2::processCommand(drone::command &command)
 				break;
 			}
 
+			_cmdmutex.lock();
 			_commandqueue.push_back(FlipCommand(dir));
+			_cmdmutex.unlock();
 		}
 		break;
 	}
@@ -375,7 +478,9 @@ bool ARDrone2::processCommand(drone::command &command)
 
 bool ARDrone2::processNoCommand()
 {
+	_cmdmutex.lock();
 	_commandqueue.push_back(_latestAttitudeCommand);
+	_cmdmutex.unlock();
 	return true;
 }
 

@@ -37,8 +37,16 @@ class Drone
 		 */
 		std::shared_ptr<const drone::navdata> getNavdata();
 		virtual drone::limits getLimits() = 0; // Returns limits for in-flight angles and speeds
+		virtual drone::config getConfig() = 0;
 
 		bool isFlying();
+
+		/*
+		 * Configuration functions
+		 */
+
+		virtual void setLimits(drone::limits limits) = 0;
+		virtual void setConfig(drone::config config) = 0;
 
 		/*
 		 * Drone flight commands
