@@ -9,6 +9,8 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
+//#include <boost/lambda/lambda.hpp>
+//#include <boost/lambda/bind.hpp>
 
 #include <thread>
 #include <chrono>
@@ -41,12 +43,13 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	// Bebop discovery connection
 	tcp::resolver discovery_resolver(io_service);
 	tcp::resolver::query discovery_query(ip, to_string(bebop::DISCOVERY_PORT));
-	tcp::endpoint discovery_endpoint = *discovery_resolver.resolve(discovery_query);
+	tcp::resolver::iterator discovery_endpoint_iter = discovery_resolver.resolve(discovery_query);
 
 	tcp::socket discovery_socket(io_service);
 	discovery_socket.open(tcp::v4());
 	discovery_socket.bind(tcp::endpoint(tcp::v4(), bebop::DISCOVERY_PORT));
-	discovery_socket.connect(discovery_endpoint);
+	discovery_socket.connect(*discovery_endpoint_iter);
+	//tryConnecting(io_service, discovery_socket, discovery_endpoint_iter);
 
 	// Bebop configuration packet
 	boost::property_tree::ptree discovery_request;
@@ -89,8 +92,8 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	int videoFragmentSize = discovery_response.get<int>("arstream_fragment_size");
 	int videoMaxFragmentNumber = discovery_response.get<int>("arstream_fragment_maximum_number");
 
-	BOOST_LOG_TRIVIAL(debug) << "fragment size:   " << videoFragmentSize;
-	BOOST_LOG_TRIVIAL(debug) << "fragment number: " << videoMaxFragmentNumber;
+	BOOST_LOG_TRIVIAL(debug) << "Video max. fragment size:   " << videoFragmentSize;
+	BOOST_LOG_TRIVIAL(debug) << "Video max. fragment number: " << videoMaxFragmentNumber;
 
 	if(videoFragmentSize > BEBOP_NAVDATA_BUFFER_SIZE)
 	{
@@ -117,6 +120,55 @@ void controllink::init(string ip, boost::asio::io_service &io_service)
 	_videodecoder.reset(new videodecoder(videoFragmentSize, videoMaxFragmentNumber));
 }
 
+void controllink::close()
+{
+	if(_d2c_socket != nullptr)
+	{
+		_d2c_socket->close();
+	}
+
+	if(_c2d_socket != nullptr)
+	{
+		_c2d_socket->close();
+	}
+}
+
+/*
+void controllink::tryConnecting(boost::asio::io_service &io_service, tcp::socket &socket, tcp::resolver::iterator &endpoint_iter)
+{
+	boost::asio::deadline_timer deadline(io_service);
+	deadline.expires_from_now(boost::posix_time::seconds(2));
+
+	deadline.async_wait(boost::lambda::bind(&controllink::abortConnectionAttempt, this, boost::lambda::var(socket)));
+
+	boost::system::error_code ec = boost::asio::error::would_block;
+
+	boost::asio::async_connect(socket, endpoint_iter, boost::lambda::var(ec) == boost::lambda::_1);
+
+	BOOST_LOG_TRIVIAL(debug) << "Attempting connection...";
+
+	do
+	{
+		io_service.run_one();
+	}
+	while (socket.is_open() && ec == boost::asio::error::would_block);
+
+	deadline.cancel();
+
+	if(ec || !socket.is_open())
+	{
+		throw boost::system::system_error(ec ? ec : boost::asio::error::operation_aborted);
+	}
+}
+
+void controllink::abortConnectionAttempt(tcp::socket &socket)
+{
+	BOOST_LOG_TRIVIAL(debug) << "Abort connection attempt after timeout.";
+	boost::system::error_code ec;
+	socket.cancel(ec);
+	socket.close(ec);
+}
+*/
 void controllink::initConfig()
 {
 	// Set time and date
@@ -193,7 +245,7 @@ void controllink::setConfig(drone::config config)
 	{
 		setLimits(config.limits.altitude, config.limits.angle, config.limits.vspeed, config.limits.yawspeed);
 
-		navdata_id outdoor_id = command_ids::outdoor_flight;
+		navdata_id outdoor_id = command_ids::outdoor_wifi_mode;
 		vector<boost::any> outdoor_args = {(uint8_t) 0};
 
 		navdata_id hull_id = command_ids::hull_protection;
@@ -202,7 +254,7 @@ void controllink::setConfig(drone::config config)
 		if(config.outdoor)
 		{
 			outdoor_args[0] = (uint8_t) 1;
-			hull_args[1] = (uint8_t) 0;
+			hull_args[0] = (uint8_t) 0;
 		}
 
 		sendCommand(outdoor_id, outdoor_args);
@@ -217,7 +269,7 @@ void controllink::startReceivingNavdata()
 
 void controllink::navdataPacketReceived(const boost::system::error_code &error, size_t bytes_transferred)
 {
-	if(!error)
+	if(!error && bytes_transferred > 0)
 	{
 		uint8_t frametype = _navdata_receivedDataBuffer[0];
 		uint8_t frameid = _navdata_receivedDataBuffer[1];
@@ -390,8 +442,6 @@ void controllink::processAck(d2cbuffer &receivedDataBuffer, size_t bytes_transfe
 			_command_id_queue.pop();
 			_ack_seqNum_queue.pop();
 			_ack_expected = false;
-
-			BOOST_LOG_TRIVIAL(debug) << "Ack received";
 		}
 	}
 	else
@@ -602,12 +652,6 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 			_navdata.flying = true;
 		}
 	}
-	else if(navdata_key == navdata_ids::alert_state)
-	{
-		uint8_t state = _navdata_receivedDataBuffer[11];
-
-		BOOST_LOG_TRIVIAL(debug) << "Alert state changed: " << (int) state;
-	}
 	else if(navdata_key == navdata_ids::picture_taken)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
@@ -789,6 +833,61 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 		_currentLimits.vspeed = max_vertical_speed;
 
 		BOOST_LOG_TRIVIAL(debug) << "Maximum allowed vertical speed: " << max_vertical_speed << " m/s";
+	}
+	else if(navdata_key == navdata_ids::outdoor_wifi_state)
+	{
+		uint8_t outdoor = _navdata_receivedDataBuffer[11];
+
+		if(outdoor == (uint8_t) 1)
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Bebop WiFi configured for outdoor flight";
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Bebop WiFi configured for indoor flight";
+		}
+	}
+	else if(navdata_key == navdata_ids::hull_protection)
+	{
+		uint8_t hull = _navdata_receivedDataBuffer[11];
+
+		if(hull == (uint8_t) 1)
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Bebop configured for flight with hull";
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Bebop configured for flight without hull";
+		}
+	}
+	else if(navdata_key == navdata_ids::alert_state)
+	{
+		uint8_t alert = _navdata_receivedDataBuffer[11];
+
+		switch(alert)
+		{
+		case 0:
+			BOOST_LOG_TRIVIAL(debug) << "Alert state: Everything OK";
+			break;
+		case 1:
+			BOOST_LOG_TRIVIAL(warning) << "User emergency!";
+			break;
+		case 2:
+			BOOST_LOG_TRIVIAL(warning) << "Cut out alert!";
+			break;
+		case 3:
+			BOOST_LOG_TRIVIAL(warning) << "Critical battery level!";
+			break;
+		case 4:
+			BOOST_LOG_TRIVIAL(warning) << "Low battery level!";
+			break;
+		case 5:
+			BOOST_LOG_TRIVIAL(warning) << "Drone tilt angle exceeds maximum!";
+			break;
+		default:
+			BOOST_LOG_TRIVIAL(warning) << "Unknown alert state (" << (int) alert << ")!";
+			break;
+		}
 	}
 	else
 	{

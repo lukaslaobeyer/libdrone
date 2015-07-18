@@ -23,6 +23,11 @@ void Bebop::setIP(string ip)
 
 drone::limits Bebop::getLimits()
 {
+	if(_ctrllink == nullptr)
+	{
+		return _defaultConfig.limits;
+	}
+
 	drone::limits currentLimits = _ctrllink->getLimits();
 
 	if(isnan(currentLimits.altitude) || isnan(currentLimits.angle) || isnan(currentLimits.vspeed) || isnan(currentLimits.yawspeed))
@@ -46,17 +51,38 @@ drone::config Bebop::getConfig()
 
 void Bebop::setLimits(drone::limits limits)
 {
+	if(_ctrllink == nullptr)
+	{
+		return;
+	}
+
 	_ctrllink->setLimits(limits.altitude, limits.angle, limits.vspeed, limits.yawspeed);
 }
 
 void Bebop::setConfig(drone::config config)
 {
-	_ctrllink->setConfig(config);
-	_outdoor = config.outdoor;
+	if(config.valid)
+	{
+		if(_ctrllink == nullptr)
+		{
+			_customInitialConfig = config;
+			_outdoor = config.outdoor;
+		}
+		else
+		{
+			_ctrllink->setConfig(config);
+			_outdoor = config.outdoor;
+		}
+	}
 }
 
 void Bebop::takePicture()
 {
+	if(_ctrllink == nullptr)
+	{
+		return;
+	}
+
 	bebop::navdata_id command_id = bebop::command_ids::take_picture;
 	vector<boost::any> args{};
 
@@ -70,6 +96,11 @@ bool Bebop::isRecording()
 
 void Bebop::startRecording()
 {
+	if(_ctrllink == nullptr)
+	{
+		return;
+	}
+
 	bebop::navdata_id command_id = bebop::command_ids::video;
 	vector<boost::any> args{(uint8_t) 1};
 
@@ -80,6 +111,11 @@ void Bebop::startRecording()
 
 void Bebop::stopRecording()
 {
+	if(_ctrllink == nullptr)
+	{
+		return;
+	}
+
 	bebop::navdata_id command_id = bebop::command_ids::video;
 	vector<boost::any> args{(uint8_t) 0};
 
@@ -119,7 +155,14 @@ void Bebop::beforeUpdate()
 	if(!config_initialized)
 	{
 		_ctrllink->initConfig();
-		_ctrllink->setConfig(_defaultConfig);
+		if(_customInitialConfig.valid)
+		{
+			_ctrllink->setConfig(_customInitialConfig);
+		}
+		else
+		{
+			_ctrllink->setConfig(_defaultConfig);
+		}
 		config_initialized = true;
 	}
 
@@ -259,7 +302,15 @@ bool Bebop::processCommand(drone::command &command)
 
 	if(processed)
 	{
-		_ctrllink->sendCommand(command_id, args);  //TODO: Handle exceptions?
+		try
+		{
+			_ctrllink->sendCommand(command_id, args);
+		}
+		catch(boost::system::system_error &ex)
+		{
+			BOOST_LOG_TRIVIAL(error) << "Connection lost! " << ex.what();
+			return false;
+		}
 		return true;
 	}
 
@@ -273,5 +324,5 @@ bool Bebop::processNoCommand()
 
 void Bebop::connectionLost()
 {
-
+	_ctrllink->close();
 }

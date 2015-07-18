@@ -50,6 +50,7 @@ class Bebop : public FPVDrone
 		drone::command _lastAttitudeCommand = drone::commands::attitude();
 
 		drone::config _defaultConfig{drone::limits{0.2f, 2.0f, 1.2f, 5.0f}, false, true};
+		drone::config _customInitialConfig{drone::limits{0, 0, 0, 0}, false, false};
 
 		bool _outdoor = false;
 

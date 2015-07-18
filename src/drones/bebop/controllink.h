@@ -1,8 +1,8 @@
 #ifndef LIBDRONE_BEBOP_CONTROLLINK_H
 #define LIBDRONE_BEBOP_CONTROLLINK_H
 
-#define ACK_RETRY_CYCLES 5 // Retry sending acked command every 5 cycles
-#define ACK_IGNORE_CYCLES 20 // Give up after 20 cycles
+#define ACK_RETRY_CYCLES 10 // Retry sending acked command every 10 cycles
+#define ACK_IGNORE_CYCLES 30 // Give up after 30 cycles
 
 #include <drones/bebop/constants.h>
 #include <types.h>
@@ -41,6 +41,8 @@ namespace bebop
 			explicit controllink();
 			
 			void init(std::string ip, boost::asio::io_service &io_service);
+			void close();
+
 			void initConfig(); // Requires a running update loop
 			
 			void setLimits(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed); // Max altitude in m,
@@ -61,6 +63,9 @@ namespace bebop
 			static frameheaderbuf createHeader(frameheader &header);
 			static std::vector<char> assemblePacket(frameheader &header, std::vector<char> &payload);
 		private:
+			//void tryConnecting(boost::asio::io_service &io_service, boost::asio::ip::tcp::socket &socket, boost::asio::ip::tcp::resolver::iterator &endpoint);
+			//void abortConnectionAttempt(boost::asio::ip::tcp::socket &socket);
+
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args, bool ack);
 			void sendAckedCommand(navdata_id &command_id, std::vector<boost::any> &args);
 

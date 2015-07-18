@@ -85,6 +85,8 @@ namespace bebop
 
 		const navdata_id sensor_state{0, 5, 8, "BB", false};
 
+		const navdata_id outdoor_wifi_state{0, 10, 0, "B", false}; // 1 if outdoor, 0 if indoor
+
 		const navdata_id magneto_calib_state{0, 14, 0, "BBBB", false};
 		const navdata_id magneto_calib_required{0, 14, 1, "B", false};
 
@@ -107,11 +109,11 @@ namespace bebop
 
 		const navdata_id flattrim{1, 4, 0, "", false};
 		const navdata_id flying_state{1, 4, 1, "B", false}; // 0: landed; 1: taking off; 2: hovering; 3: flying; 4: landing; 5: emergency
-		const navdata_id alert_state{1, 4, 2, "B", false};
+		const navdata_id alert_state{1, 4, 2, "B", false}; // 0: no alert; 1: user emergency; 2: cut out alert (??); 3: critical battery level; 4: low battery; 5: angle too high
 		const navdata_id homenavigation_state{1, 4, 3, "B", false};
 
-		const navdata_id picture_taken{1, 8, 2, "BB", false}; // 1 if picture taken; error state
-		const navdata_id video_recording_state{1, 8, 3, "B", false}; // 1 if recording started; error state
+		const navdata_id picture_taken{1, 8, 2, "BB", false}; // 0 if ready, 1 if busy, 2 if "not available"; 0 if OK, 1 if unknown error, 2 if camera problem, 3 if memory full, 4 if low battery
+		const navdata_id video_recording_state{1, 8, 3, "BB", false}; // same as picture_taken
 
 		const navdata_id streaming_state{1, 22, 0, "B", false}; // 0: enabled; 1: disabled; 2: error
 
@@ -143,6 +145,8 @@ namespace bebop
 
 		const navdata_id piloting_mode{0, 8, 0, "B", true}; // 1 to enable piloting mode, 0 to disable
 
+		const navdata_id outdoor_wifi_mode{0, 9, 0, "B", true}; // 1 for outdoor, 0 for indoor
+
 		const navdata_id flattrim{1, 0, 0, "", true};
 		const navdata_id takeoff{1, 0, 1, "", true};
 		const navdata_id pcmd{1, 0, 2, "Bbbbbf", false}; // 1: 1 to activate roll/pitch movement; 2-5: roll, pitch, yaw, gaz in range [-100:100]; 6: unused
@@ -165,7 +169,7 @@ namespace bebop
 		const navdata_id max_vertical_speed{1, 11, 0, "f", true}; // Maximum vertical speed in m/s
 		const navdata_id max_rotation_speed{1, 11, 1, "f", true}; // Maximum rotation speed in deg/s
 		const navdata_id hull_protection{1, 11, 2, "B", true}; // 1 for hull protection
-		const navdata_id outdoor_flight{1, 11, 2, "B", true}; // 1 for outdoor flight
+		const navdata_id outdoor_flight{1, 11, 3, "B", true}; // 1 for outdoor flight WARNING: ignored by drone
 
 		const navdata_id picture_format{1, 19, 0, "B", true}; // 0: raw; 1: 4:3 JPEG; 2: 16:9 snapshot TODO: verify
 		const navdata_id whitebalance_mode{1, 19, 1, "B", true}; // 0: auto; 1: tungsten; 2: daylight; 3: cloudy; 4: cool white TODO: verify
