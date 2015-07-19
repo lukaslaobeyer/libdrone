@@ -128,13 +128,12 @@ drone::connectionstatus Bebop::tryConnecting()
 {
 	try
 	{
-		if(_io_service == nullptr)
-		{
-			_io_service.reset(new boost::asio::io_service);
-		}
+		_io_service.reset(new boost::asio::io_service);
 
 		_ctrllink.reset(new bebop::controllink);
 		_ctrllink->init(_ip, *_io_service);
+
+		_config_initialized = false;
 
 		return drone::connectionstatus::CONNECTION_ESTABLISHED;
 	}
@@ -149,10 +148,9 @@ drone::connectionstatus Bebop::tryConnecting()
 void Bebop::beforeUpdate()
 {
 	static int zero_packets_counter = 0;
-	static bool config_initialized = false;
 
 	// Initialize Bebop config on update loop start
-	if(!config_initialized)
+	if(!_config_initialized)
 	{
 		_ctrllink->initConfig();
 		if(_customInitialConfig.valid)
@@ -163,7 +161,7 @@ void Bebop::beforeUpdate()
 		{
 			_ctrllink->setConfig(_defaultConfig);
 		}
-		config_initialized = true;
+		_config_initialized = true;
 	}
 
 	// Poll data
@@ -325,4 +323,5 @@ bool Bebop::processNoCommand()
 void Bebop::connectionLost()
 {
 	_ctrllink->close();
+	BOOST_LOG_TRIVIAL(debug) << "Control link closed";
 }

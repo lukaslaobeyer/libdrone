@@ -55,6 +55,8 @@ class Bebop : public FPVDrone
 		bool _outdoor = false;
 
 		bool _recording = false;
+
+		bool _config_initialized = false;
 };
 
 #endif

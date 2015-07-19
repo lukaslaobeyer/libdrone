@@ -12,6 +12,7 @@ namespace bebop
 	struct navdata : drone::navdata
 	{
 		Eigen::Vector2f cameraorientation; // tilt, pan, unknown units TODO: units!
+		bool gps_fix;
 		double latitude; // latitude from GPS in decimal degrees
 		double longitude; // longitude from GPS in decimal degrees
 		double gps_altitude; // altitude from GPS in meters

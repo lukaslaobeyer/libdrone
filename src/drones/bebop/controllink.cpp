@@ -124,12 +124,12 @@ void controllink::close()
 {
 	if(_d2c_socket != nullptr)
 	{
-		_d2c_socket->close();
+		_d2c_socket.reset();
 	}
 
 	if(_c2d_socket != nullptr)
 	{
-		_c2d_socket->close();
+		_c2d_socket.reset();
 	}
 }
 
@@ -624,7 +624,15 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 	{
 		uint8_t fix = _navdata_receivedDataBuffer[11];
 
+		_navdata.gps_fix = fix;
+
 		BOOST_LOG_TRIVIAL(debug) << "GPS fix state changed: " << (int) fix;
+	}
+	else if(navdata_key == navdata_ids::gps_sats)
+	{
+		uint8_t sats = _navdata_receivedDataBuffer[11];
+
+		BOOST_LOG_TRIVIAL(debug) << "GPS satellites available: " << (int) sats;
 	}
 	else if(navdata_key == navdata_ids::camera_orientation)
 	{
@@ -887,6 +895,19 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 		default:
 			BOOST_LOG_TRIVIAL(warning) << "Unknown alert state (" << (int) alert << ")!";
 			break;
+		}
+	}
+	else if(navdata_key == navdata_ids::disconnection)
+	{
+		uint8_t cause = _navdata_receivedDataBuffer[11];
+
+		if(cause == 0)
+		{
+			BOOST_LOG_TRIVIAL(debug) << "Drone disconnecting. Power button was pressed.";
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(warning) << "Drone reporting disconnect for unknown reason!";
 		}
 	}
 	else

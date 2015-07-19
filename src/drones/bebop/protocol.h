@@ -75,6 +75,8 @@ namespace bebop
 
 	namespace navdata_ids
 	{
+		const navdata_id disconnection{0, 1, 0, "B", false}; // Drone says goodbye. If 0, cause is off button press. Otherwise, cause is unknown.
+
 		const navdata_id all_states_sent{0, 5, 0, "", false};
 
 		const navdata_id wifi_rssi{0, 5, 7, "h", false}; // in dBm
@@ -104,6 +106,7 @@ namespace bebop
 		const navdata_id attitude{1, 4, 6, "fff", false}; // roll, pitch, yaw
 		const navdata_id speed{1, 4, 5, "fff", false}; // x, y, z in m/s
 		const navdata_id gps{1, 4, 4, "ddd", false}; // latitude, longitude in decimal degrees and altitude in m
+		const navdata_id gps_sats{129, 3, 0, "B", false}; // number of available GPS satellites
 
 		const navdata_id camera_orientation{1, 25, 0, "bb", false}; // tilt and pan in range [-100:100]
 

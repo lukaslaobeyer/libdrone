@@ -19,6 +19,8 @@
 #include <cmath>
 #include <mutex>
 
+#include <Eigen/Dense>
+
 #include <boost/any.hpp>
 
 #include <boost/asio.hpp>
@@ -89,7 +91,7 @@ namespace bebop
 		    boost::asio::ip::udp::endpoint _navdata_sender_endpoint;
     		d2cbuffer _navdata_receivedDataBuffer;
 
-    		navdata _navdata;
+    		bebop::navdata _navdata;
 
     		drone::limits _currentLimits{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
 
