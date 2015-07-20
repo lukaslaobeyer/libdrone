@@ -5,6 +5,7 @@
 #include <commands.h>
 #include <interface/iconnectionstatuslistener.h>
 #include <interface/inavdatalistener.h>
+#include <interface/istatuslistener.h>
 
 #include <vector>
 #include <atomic>
@@ -26,6 +27,8 @@ class Drone
 
 		void addNavdataListener(INavdataListener *listener);
 		void removeNavdataListener(INavdataListener *listener);
+		void addStatusListener(IStatusListener *listener);
+		void removeStatusListener(IStatusListener *listener);
 		void addConnectionStatusListener(IConnectionStatusListener *listener);
 		void removeConnectionStatusListener(IConnectionStatusListener *listener);
 
@@ -69,6 +72,11 @@ class Drone
 		void markConnectionLost();
 
 		/*
+		 * Call this from your drone implementation
+		 */
+		void notifyStatusListeners(int status);
+
+		/*
 		 * To be implemented by specific drone implementation
 		 */
 		virtual drone::connectionstatus tryConnecting() = 0;
@@ -91,6 +99,7 @@ class Drone
 		std::vector<drone::command> _commandqueue;
 
 		std::vector<INavdataListener *> _ndlisteners;
+		std::vector<IStatusListener *> _slisteners;
 		std::vector<IConnectionStatusListener *> _cslisteners;
 };
 

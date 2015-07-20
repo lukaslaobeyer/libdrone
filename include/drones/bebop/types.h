@@ -16,6 +16,7 @@ namespace bebop
 		double latitude; // latitude from GPS in decimal degrees
 		double longitude; // longitude from GPS in decimal degrees
 		double gps_altitude; // altitude from GPS in meters
+		int gps_sats; // Number of available GPS sattelites
 	};
 }
 

@@ -72,6 +72,16 @@ void Drone::removeNavdataListener(INavdataListener *listener)
 	_ndlisteners.erase(remove(_ndlisteners.begin(), _ndlisteners.end(), listener), _ndlisteners.end());
 }
 
+void Drone::addStatusListener(IStatusListener *listener)
+{
+	_slisteners.push_back(listener);
+}
+
+void Drone::removeStatusListener(IStatusListener *listener)
+{
+	_slisteners.erase(remove(_slisteners.begin(), _slisteners.end(), listener), _slisteners.end());
+}
+
 void Drone::addConnectionStatusListener(IConnectionStatusListener *listener)
 {
 	_cslisteners.push_back(listener);
@@ -87,6 +97,14 @@ void Drone::notifyNavdataListeners(std::shared_ptr<const drone::navdata> navdata
 	for(INavdataListener *i : _ndlisteners)
 	{
 		i->navdataAvailable(navdata);
+	}
+}
+
+void Drone::notifyStatusListeners(int status)
+{
+	for(IStatusListener *i : _slisteners)
+	{
+		i->statusUpdateAvailable(status);
 	}
 }
 

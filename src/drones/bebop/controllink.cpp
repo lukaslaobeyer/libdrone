@@ -632,7 +632,7 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 	{
 		uint8_t sats = _navdata_receivedDataBuffer[11];
 
-		BOOST_LOG_TRIVIAL(debug) << "GPS satellites available: " << (int) sats;
+		_navdata.gps_sats = sats;
 	}
 	else if(navdata_key == navdata_ids::camera_orientation)
 	{
