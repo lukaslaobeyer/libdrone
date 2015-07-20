@@ -5,6 +5,7 @@
 #include <drones/fpvdrone.h>
 #include <types.h>
 #include <drones/bebop/constants.h>
+#include <drones/fpvtypes.h>
 
 #include "../src/drones/bebop/controllink.h"
 
@@ -22,15 +23,16 @@ class Bebop : public FPVDrone
 		Bebop();
 
 		void setIP(std::string ip);
+		std::string getIP();
 
 		drone::limits getLimits();
 		drone::config getConfig();
 		void setLimits(drone::limits limits);
 		void setConfig(drone::config config);
 
-		void takePicture();
+		fpvdrone::picturestatus takePicture();
 		bool isRecording();
-		void startRecording();
+		fpvdrone::picturestatus startRecording();
 		void stopRecording();
 
 	protected:

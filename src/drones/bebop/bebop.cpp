@@ -21,6 +21,11 @@ void Bebop::setIP(string ip)
 	_ip = ip;
 }
 
+string Bebop::getIP()
+{
+	return _ip;
+}
+
 drone::limits Bebop::getLimits()
 {
 	if(_ctrllink == nullptr)
@@ -76,17 +81,24 @@ void Bebop::setConfig(drone::config config)
 	}
 }
 
-void Bebop::takePicture()
+fpvdrone::picturestatus Bebop::takePicture()
 {
 	if(_ctrllink == nullptr)
 	{
-		return;
+		return fpvdrone::ERROR;
+	}
+
+	if(!_ctrllink->isReadyForTakingPicture())
+	{
+		return fpvdrone::BUSY;
 	}
 
 	bebop::navdata_id command_id = bebop::command_ids::take_picture;
 	vector<boost::any> args{};
 
 	_ctrllink->sendCommand(command_id, args);
+
+	return fpvdrone::OK;
 }
 
 bool Bebop::isRecording()
@@ -94,11 +106,11 @@ bool Bebop::isRecording()
 	return _recording;
 }
 
-void Bebop::startRecording()
+fpvdrone::picturestatus Bebop::startRecording()
 {
 	if(_ctrllink == nullptr)
 	{
-		return;
+		return fpvdrone::ERROR;
 	}
 
 	bebop::navdata_id command_id = bebop::command_ids::video;
@@ -107,6 +119,8 @@ void Bebop::startRecording()
 	_ctrllink->sendCommand(command_id, args);
 
 	_recording = true;
+
+	return fpvdrone::OK;
 }
 
 void Bebop::stopRecording()

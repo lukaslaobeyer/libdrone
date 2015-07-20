@@ -239,6 +239,11 @@ void controllink::setLimits(float max_altitude, float max_tilt, float max_vertic
 	sendCommand(max_yaw_speed_id, max_yaw_speed_args);
 }
 
+bool controllink::isReadyForTakingPicture()
+{
+	return _readyForTakingPicture;
+}
+
 void controllink::setConfig(drone::config config)
 {
 	if(config.valid)
@@ -660,11 +665,44 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 			_navdata.flying = true;
 		}
 	}
-	else if(navdata_key == navdata_ids::picture_taken)
+	else if(navdata_key == navdata_ids::picture_state)
 	{
 		uint8_t state = _navdata_receivedDataBuffer[11];
+		uint8_t error = _navdata_receivedDataBuffer[12];
 
-		BOOST_LOG_TRIVIAL(debug) << "Picture taken? " << (int) state;
+		switch(state)
+		{
+		case 0:
+			_readyForTakingPicture = true;
+			BOOST_LOG_TRIVIAL(debug) << "Ready for taking new pictures";
+			break;
+		case 1:
+			_readyForTakingPicture = false;
+			BOOST_LOG_TRIVIAL(debug) << "Processing picture...";
+			break;
+		case 2:
+			_readyForTakingPicture = false;
+			BOOST_LOG_TRIVIAL(error) << "Cannot take picture";
+			break;
+		}
+
+		switch(error)
+		{
+		case 0:
+			break;
+		case 1:
+			BOOST_LOG_TRIVIAL(error) << "Unknown error taking picture!";
+			break;
+		case 2:
+			BOOST_LOG_TRIVIAL(error) << "Camera problem!";
+			break;
+		case 3:
+			BOOST_LOG_TRIVIAL(warning) << "Memory full!";
+			break;
+		case 4:
+			BOOST_LOG_TRIVIAL(warning) << "Battery too low to take picture!";
+			break;
+		}
 	}
 	else if(navdata_key == navdata_ids::video_recording_state)
 	{

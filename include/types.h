@@ -42,6 +42,19 @@ namespace drone
 		ALREADY_CONNECTED,
 		EXCEPTION_OCCURRED
 	};
+
+	enum error
+	{
+		NOT_CONNECTED,
+		NOT_ARMED,
+		OK
+	};
+
+	namespace status
+	{
+		const int DISARMED = 0;
+		const int ARMED = 1;
+	}
 }
 
 #endif

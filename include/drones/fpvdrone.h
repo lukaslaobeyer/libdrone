@@ -5,6 +5,7 @@
 #include <interface/ivideolistener.h>
 
 #include <opencv2/opencv.hpp>
+#include <drones/fpvtypes.h>
 
 class FPVDrone : public Drone
 {
@@ -14,9 +15,9 @@ class FPVDrone : public Drone
 		void addVideoListener(IVideoListener *listener);
 		void removeVideoListener(IVideoListener *listener);
 
-		virtual void takePicture() = 0;
+		virtual fpvdrone::picturestatus takePicture() = 0;
 		virtual bool isRecording() = 0;
-		virtual void startRecording() = 0;
+		virtual fpvdrone::picturestatus startRecording() = 0;
 		virtual void stopRecording() = 0;
 
 	protected:

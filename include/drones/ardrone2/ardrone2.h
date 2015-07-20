@@ -7,6 +7,7 @@
 #include <drones/ardrone2/constants.h>
 #include <drones/ardrone2/types.h>
 #include <drones/ardrone2/commands.h>
+#include <drones/fpvtypes.h>
 
 #include "../src/drones/ardrone2/controllink.h"
 #include "../src/drones/ardrone2/navdata/navdatamanager.h"
@@ -33,9 +34,9 @@ class ARDrone2 : public FPVDrone
 		void setLimits(drone::limits limits);
 		void setConfig(drone::config config);
 
-		void takePicture();
+		fpvdrone::picturestatus takePicture();
 		bool isRecording();
-		void startRecording();
+		fpvdrone::picturestatus startRecording();
 		void stopRecording();
 
 	protected:

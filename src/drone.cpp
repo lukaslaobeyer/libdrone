@@ -19,6 +19,7 @@ drone::connectionstatus Drone::connect()
 	{
 		_connected.store(true);
 		notifyConnectionEstablished();
+		notifyStatusListeners(isArmed() ? drone::status::ARMED : drone::status::DISARMED);
 	}
 	else
 	{
@@ -60,6 +61,11 @@ bool Drone::isFlying()
 	{
 		return false;
 	}
+}
+
+bool Drone::isArmed()
+{
+	return _armed.load();
 }
 
 void Drone::addNavdataListener(INavdataListener *listener)
@@ -245,23 +251,49 @@ void Drone::runUpdateLoop()
 	}
 }
 
-/*std::shared_ptr<drone::navdata> Drone::getNavdata()
-{
-	return _navdata;
-}*/
-
-bool Drone::addCommand(drone::command command)
+drone::error Drone::arm()
 {
 	if(!_connected.load())
 	{
-		return false;
+		return drone::NOT_CONNECTED;
+	}
+
+	_armed.store(true);
+	notifyStatusListeners(drone::status::ARMED);
+
+	return drone::OK;
+}
+
+drone::error Drone::disarm()
+{
+	if(!_connected.load())
+	{
+		return drone::NOT_CONNECTED;
+	}
+
+	_armed.store(false);
+	notifyStatusListeners(drone::status::DISARMED);
+
+	return drone::OK;
+}
+
+drone::error Drone::addCommand(drone::command command)
+{
+	if(!_connected.load())
+	{
+		return drone::NOT_CONNECTED;
+	}
+
+	if(!_armed.load())
+	{
+		return drone::NOT_ARMED;
 	}
 
 	_commandmutex.lock();
 	_commandqueue.push_back(command);
 	_commandmutex.unlock();
 
-	return true;
+	return drone::OK;
 }
 
 float Drone::applyLimit(float value, float threshold)

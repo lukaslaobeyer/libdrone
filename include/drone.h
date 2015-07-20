@@ -44,6 +44,8 @@ class Drone
 
 		bool isFlying();
 
+		bool isArmed();
+
 		/*
 		 * Configuration functions
 		 */
@@ -54,7 +56,9 @@ class Drone
 		/*
 		 * Drone flight commands
 		 */
-		bool addCommand(drone::command command); // Returns false if not connected, true otherwise
+		drone::error arm();
+		drone::error disarm();
+		drone::error addCommand(drone::command command); // Returns false if not connected, true otherwise
 
 		/*
 		 * Utility functions
@@ -92,6 +96,7 @@ class Drone
 
 		std::atomic<bool> _stop_flag{false};
 		std::atomic<bool> _connected{false};
+		std::atomic<bool> _armed{false};
 
 		boost::thread *_updater = nullptr;
 

@@ -53,6 +53,8 @@ namespace bebop
 			                                                                                                   // Max yaw speed in rad/s
 			void setConfig(drone::config config);
 
+			bool isReadyForTakingPicture();
+
 			void sendCommand(navdata_id &command_id, std::vector<boost::any> &args);
 
 			void processCommandQueue();
@@ -92,6 +94,8 @@ namespace bebop
     		d2cbuffer _navdata_receivedDataBuffer;
 
     		bebop::navdata _navdata;
+
+    		bool _readyForTakingPicture = true;
 
     		drone::limits _currentLimits{std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN()};
 
