@@ -40,12 +40,15 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 	double pitch;
 	double roll;
 	double yaw;
+	double height;
 
 	memcpy(&roll, _navdata_buf.data() + 11 * sizeof(double), sizeof(double));
 	memcpy(&pitch, _navdata_buf.data() + 12 * sizeof(double), sizeof(double));
 	memcpy(&yaw, _navdata_buf.data() + 13 * sizeof(double), sizeof(double));
+	memcpy(&height, _navdata_buf.data() + 26 * sizeof(double), sizeof(double));
 
 	_navdata.attitude = Eigen::Vector3f(pitch, roll, yaw);
+	_navdata.altitude = height;
 
 	// Listen for next packet
 	_navdata_socket->async_receive_from(boost::asio::buffer(_navdata_buf), _navdata_sender_endpoint, boost::bind(&fullnavdata::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));

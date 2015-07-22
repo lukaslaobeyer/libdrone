@@ -239,6 +239,7 @@ bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
 	if(fullnavdata != nullptr)
 	{
 		navdata->attitude = fullnavdata->attitude;
+		navdata->altitude = fullnavdata->altitude;
 	}
 
 	return true;
