@@ -29,6 +29,7 @@ controllink::controllink()
 	_navdata.batterystatus = 0;
 	_navdata.cameraorientation = Eigen::Vector2f();
 	_navdata.flying = false;
+	_navdata.full = false;
 	_navdata.gps_altitude = 0;
 	_navdata.latitude = 0;
 	_navdata.linearvelocity = Eigen::Vector3f();

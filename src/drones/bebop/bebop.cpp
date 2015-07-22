@@ -233,13 +233,18 @@ void Bebop::updateCycle()
 
 bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
 {
-	navdata = _ctrllink->getNavdata();
-
 	shared_ptr<bebop::navdata> fullnavdata = _fullnavdata->getNavdata();
 	if(fullnavdata != nullptr)
 	{
-		navdata->attitude = fullnavdata->attitude;
-		navdata->altitude = fullnavdata->altitude;
+		shared_ptr<bebop::navdata> standardnavdata = _ctrllink->getNavdata();
+		fullnavdata->flying = standardnavdata->flying;
+		fullnavdata->cameraorientation = standardnavdata->cameraorientation;
+		fullnavdata->linkquality = standardnavdata->linkquality;
+		navdata = fullnavdata;
+	}
+	else
+	{
+		navdata = _ctrllink->getNavdata();
 	}
 
 	return true;
