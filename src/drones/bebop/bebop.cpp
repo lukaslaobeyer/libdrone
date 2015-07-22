@@ -162,6 +162,16 @@ drone::connectionstatus Bebop::tryConnecting()
 		_ctrllink.reset(new bebop::controllink);
 		_ctrllink->init(_ip, *_io_service);
 
+		_fullnavdata.reset(new bebop::fullnavdata);
+		try
+		{
+			_fullnavdata->init(_ip, *_io_service);
+		}
+		catch(const boost::system::system_error &e)
+		{
+			BOOST_LOG_TRIVIAL(info) << "Full navdata not available.";
+		}
+
 		_config_initialized = false;
 
 		return drone::connectionstatus::CONNECTION_ESTABLISHED;
@@ -224,6 +234,13 @@ void Bebop::updateCycle()
 bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
 {
 	navdata = _ctrllink->getNavdata();
+
+	shared_ptr<bebop::navdata> fullnavdata = _fullnavdata->getNavdata();
+	if(fullnavdata != nullptr)
+	{
+		navdata->attitude = fullnavdata->attitude;
+	}
+
 	return true;
 }
 
