@@ -164,7 +164,7 @@ namespace bebop
 		const navdata_id camera_orientation{1, 1, 0, "bb", false}; // tilt, pan in deg
 
 		const navdata_id take_picture{1, 7, 2, "", true};
-		const navdata_id video{1, 7, 3, "B", true}; // 1: 1 to start recording, 0 to stop
+		const navdata_id video{1, 7, 3, "BBBB", true}; // 1: 1 to start recording, 0 to stop; rest 0
 
 		const navdata_id max_altitude{1, 2, 0, "f", true}; // Maximum altitude in m
 		const navdata_id max_tilt{1, 2, 1, "f", true}; // Maximum tilt in deg

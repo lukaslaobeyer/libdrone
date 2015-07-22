@@ -93,6 +93,16 @@ fpvdrone::picturestatus Bebop::takePicture()
 		return fpvdrone::BUSY;
 	}
 
+	if(_recording)
+	{
+		return fpvdrone::BUSY;
+	}
+
+	bebop::navdata_id command_id_0 = bebop::command_ids::video_autorecord;
+	vector<boost::any> args_0{(uint8_t) 0, (uint8_t) 0};
+
+	_ctrllink->sendCommand(command_id_0, args_0);
+
 	bebop::navdata_id command_id = bebop::command_ids::take_picture;
 	vector<boost::any> args{};
 
@@ -113,8 +123,13 @@ fpvdrone::picturestatus Bebop::startRecording()
 		return fpvdrone::ERROR;
 	}
 
+	bebop::navdata_id command_id_0 = bebop::command_ids::video_autorecord;
+	vector<boost::any> args_0{(uint8_t) 1, (uint8_t) 0};
+
+	_ctrllink->sendCommand(command_id_0, args_0);
+
 	bebop::navdata_id command_id = bebop::command_ids::video;
-	vector<boost::any> args{(uint8_t) 1};
+	vector<boost::any> args{(uint8_t) 1, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0};
 
 	_ctrllink->sendCommand(command_id, args);
 
@@ -131,7 +146,7 @@ void Bebop::stopRecording()
 	}
 
 	bebop::navdata_id command_id = bebop::command_ids::video;
-	vector<boost::any> args{(uint8_t) 0};
+	vector<boost::any> args{(uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0};
 
 	_ctrllink->sendCommand(command_id, args);
 

@@ -12,6 +12,7 @@ namespace drone
 	struct command
 	{
 		int command;
+		bool needsArming;
 		std::vector<boost::any> parameters;
 	};
 
@@ -30,31 +31,31 @@ namespace drone
 		struct emergency : drone::command
 		{
 			emergency()
-			: drone::command{id::EMERGENCY} {}
+			: drone::command{id::EMERGENCY, false} {}
 		};
 
 		struct takeoff : drone::command
 		{
 			takeoff()
-			: drone::command{id::TAKEOFF} {}
+			: drone::command{id::TAKEOFF, true} {}
 		};
 
 		struct land : drone::command
 		{
 			land()
-			: drone::command{id::LAND} {}
+			: drone::command{id::LAND, false} {}
 		};
 
 		struct fttrim : drone::command
 		{
 			fttrim()
-			: drone::command{id::FTTRIM} {}
+			: drone::command{id::FTTRIM, false} {}
 		};
 
 		struct attitude : drone::command
 		{
 			explicit attitude(Eigen::Vector3f attitude = Eigen::Vector3f(0, 0, 0), float vspeed = 0)
-			: drone::command{id::ATTITUDE, std::vector<boost::any>{boost::any(attitude), boost::any(vspeed)}} {}
+			: drone::command{id::ATTITUDE, false, std::vector<boost::any>{boost::any(attitude), boost::any(vspeed)}} {}
 			/*
 			 * attitude (Eigen::Vector3f):
 			 *   0 (x-Axis):
@@ -72,7 +73,7 @@ namespace drone
 		struct attituderel : drone::command
 		{
 			explicit attituderel(Eigen::Vector3f attitude = Eigen::Vector3f(0, 0, 0), float vspeed = 0)
-			: drone::command{id::ATTITUDEREL, std::vector<boost::any>{boost::any(attitude), boost::any(vspeed)}} {}
+			: drone::command{id::ATTITUDEREL, false, std::vector<boost::any>{boost::any(attitude), boost::any(vspeed)}} {}
 		};
 	}
 }

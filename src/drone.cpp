@@ -284,7 +284,7 @@ drone::error Drone::addCommand(drone::command command)
 		return drone::NOT_CONNECTED;
 	}
 
-	if(!_armed.load())
+	if(command.needsArming && !_armed.load())
 	{
 		return drone::NOT_ARMED;
 	}

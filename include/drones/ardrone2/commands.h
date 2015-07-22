@@ -20,19 +20,19 @@ namespace ardrone2
 		struct magnetometercalibration : drone::command
 		{
 			magnetometercalibration()
-			: drone::command{id::MAGNETOCALIB} {}
+			: drone::command{id::MAGNETOCALIB, true} {}
 		};
 
 		struct configuration : drone::command
 		{
 			configuration(std::string key, std::string value)
-			: drone::command{id::CONFIG, std::vector<boost::any>{key, value}} {}
+			: drone::command{id::CONFIG, false, std::vector<boost::any>{key, value}} {}
 		};
 
 		struct recordonusb : drone::command
 		{
 			recordonusb(bool record)
-			: drone::command{id::RECORDONUSB, std::vector<boost::any>{record}} {}
+			: drone::command{id::RECORDONUSB, false, std::vector<boost::any>{record}} {}
 		};
 
 		struct switchview : drone::command
@@ -44,7 +44,7 @@ namespace ardrone2
 			};
 
 			switchview(view v)
-			: drone::command{id::SWITCHVIEW, std::vector<boost::any>{v}} {}
+			: drone::command{id::SWITCHVIEW, false, std::vector<boost::any>{v}} {}
 		};
 
 		struct flip : drone::command
@@ -54,7 +54,7 @@ namespace ardrone2
 				FRONT, LEFT, BACK, RIGHT
 			};
 			flip(direction d)
-			: drone::command{id::FLIP, std::vector<boost::any>{d}} {}
+			: drone::command{id::FLIP, true, std::vector<boost::any>{d}} {}
 		};
 	}
 }

@@ -26,19 +26,19 @@ namespace bebop
 				FRONT, LEFT, BACK, RIGHT
 			};
 			flip(direction d)
-			: drone::command{id::FLIP, std::vector<boost::any>{d}} {}
+			: drone::command{id::FLIP, true, std::vector<boost::any>{d}} {}
 		};
 
 		struct camera_orientation : drone::command
 		{
 			camera_orientation(float tilt, float pan)
-			: drone::command{id::CAMERA_ORIENTATION, std::vector<boost::any>{tilt, pan}} {}
+			: drone::command{id::CAMERA_ORIENTATION, false, std::vector<boost::any>{tilt, pan}} {}
 		};
 
 		struct take_picture : drone::command
 		{
 			take_picture()
-			: drone::command{id::TAKE_PICTURE} {}
+			: drone::command{id::TAKE_PICTURE, false} {}
 		};
 
 		struct video : drone::command
@@ -49,19 +49,19 @@ namespace bebop
 				STOPRECORDING
 			};
 			video(action a)
-			: drone::command{id::VIDEO, std::vector<boost::any>{a}} {}
+			: drone::command{id::VIDEO, false, std::vector<boost::any>{a}} {}
 		};
 
 		struct set_home : drone::command
 		{
 			set_home(double lat, double lon)
-			: drone::command{id::SET_HOME, std::vector<boost::any>{lat, lon}} {}
+			: drone::command{id::SET_HOME, false, std::vector<boost::any>{lat, lon}} {}
 		};
 
 		struct navigate_home : drone::command
 		{
 			navigate_home(bool start)
-			: drone::command{id::NAVIGATE_HOME, std::vector<boost::any>{start}} {}
+			: drone::command{id::NAVIGATE_HOME, true, std::vector<boost::any>{start}} {}
 		};
 	}
 }
