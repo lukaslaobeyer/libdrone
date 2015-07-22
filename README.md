@@ -8,6 +8,10 @@ Currently support is planned for the Parrot AR.Drone 2.0 and Bebop.
 * [AR.Drone 2.0](http://ardrone2.parrot.com)
 * [Bebop drone](http://www.parrot.com/usa/products/bebop-drone/)
 
+### Onboard extensions
+
+The Bebop drone does not send navigation data at any usable frequency (5 Hz is way too low for autonomous navigation). Therefore, a very simple navdata server was written that runs on the Bebop drone and retransmits the full navigation data as used internally by the drone at higher frequencies. See ``bebop-onboard/navdataserver`` for more information.
+
 ### Using the library
 
 Work in progress!
