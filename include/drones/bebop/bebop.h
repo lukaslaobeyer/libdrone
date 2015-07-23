@@ -31,6 +31,8 @@ class Bebop : public FPVDrone
 		void setLimits(drone::limits limits);
 		void setConfig(drone::config config);
 
+		cv::Mat getLatestFrame();
+
 		fpvdrone::picturestatus takePicture();
 		bool isRecording();
 		fpvdrone::picturestatus startRecording();

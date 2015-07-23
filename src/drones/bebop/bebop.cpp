@@ -81,6 +81,16 @@ void Bebop::setConfig(drone::config config)
 	}
 }
 
+cv::Mat Bebop::getLatestFrame()
+{
+	if(_ctrllink == nullptr)
+	{
+		return cv::Mat();
+	}
+
+	return _ctrllink->getVideoFrame();
+}
+
 fpvdrone::picturestatus Bebop::takePicture()
 {
 	if(_ctrllink == nullptr)

@@ -118,6 +118,11 @@ void ARDrone2::setConfig(drone::config config)
 	}
 }
 
+cv::Mat ARDrone2::getLatestFrame()
+{
+	return _vm.getVideoFrame();
+}
+
 fpvdrone::picturestatus ARDrone2::takePicture()
 {
 	try

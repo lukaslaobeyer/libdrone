@@ -15,6 +15,8 @@ class FPVDrone : public Drone
 		void addVideoListener(IVideoListener *listener);
 		void removeVideoListener(IVideoListener *listener);
 
+		virtual cv::Mat getLatestFrame() = 0;
+
 		virtual fpvdrone::picturestatus takePicture() = 0;
 		virtual bool isRecording() = 0;
 		virtual fpvdrone::picturestatus startRecording() = 0;
