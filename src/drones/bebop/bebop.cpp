@@ -100,7 +100,7 @@ unsigned long Bebop::getFrameAge()
 		return std::numeric_limits<unsigned long>::max();
 	}
 
-	unsigned long age = _ctrllink->getLatestFrameTime() - (std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1));
+	unsigned long age = (std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1)) - _ctrllink->getLatestFrameTime();
 	return age;
 }
 
