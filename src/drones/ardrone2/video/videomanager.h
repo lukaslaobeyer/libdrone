@@ -31,6 +31,7 @@ class VideoManager
 		void init(std::string ip, boost::asio::io_service &io_service); // Always call this before using other methods
 		void update(); // Process available packets, call this regularily (>60 times per second)
 		cv::Mat getVideoFrame();
+		unsigned long getLastFrameTime();
 		bool takePicture(const std::string &savePath);
 		bool startRecording(const std::string &savePath);
 		bool stopRecording();
@@ -50,6 +51,7 @@ class VideoManager
 		CodecConfig cfg;
 		boost::asio::ip::tcp::socket *socket = nullptr;
 		cv::Mat _frame;
+		unsigned long _lastFrameTime = 0;
 		int _previous_width = -1; // Width of the previous received frame, needed to see if the size changed
 		char *_receivedDataBuffer = nullptr;
 		char *_rawFrame = nullptr;

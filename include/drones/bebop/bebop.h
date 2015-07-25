@@ -32,6 +32,7 @@ class Bebop : public FPVDrone
 		void setConfig(drone::config config);
 
 		cv::Mat getLatestFrame();
+		unsigned long getFrameAge();
 
 		fpvdrone::picturestatus takePicture();
 		bool isRecording();

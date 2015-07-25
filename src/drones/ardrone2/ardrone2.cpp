@@ -123,6 +123,12 @@ cv::Mat ARDrone2::getLatestFrame()
 	return _vm.getVideoFrame();
 }
 
+unsigned long ARDrone2::getFrameAge()
+{
+	unsigned long age = _vm.getLastFrameTime() - (std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1));
+	return age;
+}
+
 fpvdrone::picturestatus ARDrone2::takePicture()
 {
 	try

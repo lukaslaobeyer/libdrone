@@ -1,6 +1,8 @@
 #include <drones/bebop/bebop.h>
 #include <drones/bebop/commands.h>
 
+#include <limits>
+
 #include <boost/log/trivial.hpp>
 
 #include "protocol.h"
@@ -89,6 +91,17 @@ cv::Mat Bebop::getLatestFrame()
 	}
 
 	return _ctrllink->getVideoFrame();
+}
+
+unsigned long Bebop::getFrameAge()
+{
+	if(_ctrllink == nullptr)
+	{
+		return std::numeric_limits<unsigned long>::max();
+	}
+
+	unsigned long age = _ctrllink->getLatestFrameTime() - (std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1));
+	return age;
 }
 
 fpvdrone::picturestatus Bebop::takePicture()

@@ -20,6 +20,7 @@ namespace bebop
 			videodecoder(int fragmentSize, int maxFragmentNumber);
 			bool insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex, int fragmentsInFrame, int fragmentIndex, int fragmentSize);
 			cv::Mat getLatestFrame();
+			unsigned long getLatestFrameTime();
 
 		private:
 			bool initializeDecoder();
@@ -37,6 +38,7 @@ namespace bebop
 			SwsContext *_sws_context = nullptr;
 
 			cv::Mat _frame;
+			unsigned long _lastFrameTime = 0;
 	};
 }
 

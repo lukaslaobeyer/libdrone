@@ -561,6 +561,11 @@ cv::Mat controllink::getVideoFrame()
 	return _videodecoder->getLatestFrame();
 }
 
+unsigned long controllink::getLatestFrameTime()
+{
+	return _videodecoder->getLatestFrameTime();
+}
+
 drone::limits controllink::getLimits()
 {
 	return _currentLimits;

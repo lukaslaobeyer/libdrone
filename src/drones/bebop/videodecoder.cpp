@@ -3,6 +3,7 @@
 #include <boost/log/trivial.hpp>
 
 #include <memory>
+#include <chrono>
 
 using namespace bebop;
 using namespace std;
@@ -213,9 +214,8 @@ bool videodecoder::decodeFrame(int frameSize)
 
 		// OpenCV Mat from BGR data
 		_frame = cv::Mat(_frame_yuv->height, _frame_yuv->width, CV_8UC3, _frame_bgr->data[0]);
+		_lastFrameTime = std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1);
 
-		//cv::imshow("Hello!", _frame);
-		//cv::waitKey(1);
 		return true;
 	}
 	else
@@ -229,4 +229,9 @@ bool videodecoder::decodeFrame(int frameSize)
 cv::Mat videodecoder::getLatestFrame()
 {
 	return _frame;
+}
+
+unsigned long videodecoder::getLatestFrameTime()
+{
+	return _lastFrameTime;
 }

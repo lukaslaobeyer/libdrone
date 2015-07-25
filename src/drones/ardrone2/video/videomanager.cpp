@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <boost/bind.hpp>
 #include <iostream>
+#include <chrono>
 
 extern "C"
 {
@@ -71,6 +72,11 @@ void VideoManager::init(string ip, boost::asio::io_service &io_service)
 cv::Mat VideoManager::getVideoFrame()
 {
 	return _frame;
+}
+
+unsigned long VideoManager::getLastFrameTime()
+{
+	return _lastFrameTime;
 }
 
 void VideoManager::update()
@@ -511,6 +517,7 @@ void VideoManager::decodePacket()
 					  _pave->display_height, cfg.pFrameOutput->data, cfg.pFrameOutput->linesize);
 
 			_frame = cv::Mat(_pave->display_height, _pave->display_width, CV_8UC3, _decode_buffer);
+			_lastFrameTime = std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1);
 		}
 		else
 		{

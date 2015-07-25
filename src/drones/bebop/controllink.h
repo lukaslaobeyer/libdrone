@@ -61,6 +61,7 @@ namespace bebop
 
 			std::shared_ptr<navdata> getNavdata();
 			cv::Mat getVideoFrame();
+			unsigned long getLatestFrameTime();
 			drone::limits getLimits();
 
 			static std::vector<char> createCommand(navdata_id &command_id, std::vector<boost::any> &args);
