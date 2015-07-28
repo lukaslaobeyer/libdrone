@@ -152,21 +152,21 @@ fpvdrone::picturestatus ARDrone2::takePicture()
 		string path = picdirectory + filename;
 		if(_vm.takePicture(path))
 		{
-			return fpvdrone::OK;
+			return fpvdrone::PIC_OK;
 		}
 		else
 		{
-			return fpvdrone::ERROR;
+			return fpvdrone::PIC_ERROR;
 		}
 	}
 	catch(std::exception &ex)
 	{
 		cerr << "Error! Could not save picture." << endl;
 		cerr << ex.what() << endl;
-		return fpvdrone::ERROR;
+		return fpvdrone::PIC_ERROR;
 	}
 
-	return fpvdrone::ERROR;
+	return fpvdrone::PIC_ERROR;
 }
 
 bool ARDrone2::isRecording()
@@ -196,20 +196,20 @@ fpvdrone::picturestatus ARDrone2::startRecording()
 		if(_vm.startRecording(videodirectory + filename))
 		{
 			_recording = true;
-			return fpvdrone::OK;
+			return fpvdrone::PIC_OK;
 		}
 		else
 		{
-			return fpvdrone::ERROR;
+			return fpvdrone::PIC_ERROR;
 		}
 	}
 	catch(runtime_error &e)
 	{
 		cerr << "Error: " << e.what() << endl;
-		return fpvdrone::ERROR;
+		return fpvdrone::PIC_ERROR;
 	}
 
-	return fpvdrone::ERROR;
+	return fpvdrone::PIC_ERROR;
 }
 
 void ARDrone2::stopRecording()

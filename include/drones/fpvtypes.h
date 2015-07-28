@@ -11,9 +11,9 @@ namespace fpvdrone
 {
 	enum picturestatus
 	{
-		OK,
-		BUSY,
-		ERROR
+		PIC_OK,
+		PIC_BUSY,
+		PIC_ERROR
 	};
 }
 

@@ -108,17 +108,17 @@ fpvdrone::picturestatus Bebop::takePicture()
 {
 	if(_ctrllink == nullptr)
 	{
-		return fpvdrone::ERROR;
+		return fpvdrone::PIC_ERROR;
 	}
 
 	if(!_ctrllink->isReadyForTakingPicture())
 	{
-		return fpvdrone::BUSY;
+		return fpvdrone::PIC_BUSY;
 	}
 
 	if(_recording)
 	{
-		return fpvdrone::BUSY;
+		return fpvdrone::PIC_BUSY;
 	}
 
 	bebop::navdata_id command_id_0 = bebop::command_ids::video_autorecord;
@@ -131,7 +131,7 @@ fpvdrone::picturestatus Bebop::takePicture()
 
 	_ctrllink->sendCommand(command_id, args);
 
-	return fpvdrone::OK;
+	return fpvdrone::PIC_OK;
 }
 
 bool Bebop::isRecording()
@@ -143,7 +143,7 @@ fpvdrone::picturestatus Bebop::startRecording()
 {
 	if(_ctrllink == nullptr)
 	{
-		return fpvdrone::ERROR;
+		return fpvdrone::PIC_ERROR;
 	}
 
 	bebop::navdata_id command_id_0 = bebop::command_ids::video_autorecord;
@@ -158,7 +158,7 @@ fpvdrone::picturestatus Bebop::startRecording()
 
 	_recording = true;
 
-	return fpvdrone::OK;
+	return fpvdrone::PIC_OK;
 }
 
 void Bebop::stopRecording()
