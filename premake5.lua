@@ -64,7 +64,7 @@ project "drone"
         links
         {
             "ws2_32",
-            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58", "boost_filesystem-mgw49-mt-d-1_58", "boost_chrono-mgw49-mt-d-1_58", "boost_log-mgw49-mt-d-1_58", "boost_date_time-mgw49-mt-d-1_58",
+            "boost_system-mgw49-mt-1_58", "boost_thread-mgw49-mt-1_58", "boost_timer-mgw49-mt-1_58", "boost_filesystem-mgw49-mt-1_58", "boost_chrono-mgw49-mt-1_58", "boost_log-mgw49-mt-1_58", "boost_date_time-mgw49-mt-1_58",
             "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300", "opencv_imgproc300",
             "avcodec", "avutil", "avformat", "swresample", "swscale"
         }
@@ -129,7 +129,7 @@ project "example-basic"
         links
         {
             "ws2_32",
-            "boost_system-mgw49-mt-d-1_58", "boost_thread-mgw49-mt-d-1_58", "boost_timer-mgw49-mt-d-1_58", "boost_log-mgw49-mt-d-1_58", "boost_date_time-mgw49-mt-d-1_58",
+            "boost_system-mgw49-mt-1_58", "boost_thread-mgw49-mt-1_58", "boost_timer-mgw49-mt-1_58", "boost_log-mgw49-mt-1_58", "boost_date_time-mgw49-mt-1_58",
             "opencv_core300", "opencv_highgui300", "opencv_imgcodecs300", "opencv_imgproc300",
             "avcodec", "avutil", "avformat", "swresample", "swscale",
             "drone"
