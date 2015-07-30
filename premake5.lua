@@ -47,18 +47,18 @@ project "drone"
         -- Include third-party libraries
         includedirs
         {
-            "C:/boost/build/include/boost-1_58",
+            "C:/boost/include/boost-1_58",
             "C:/ffmpeg/include",
-            "C:/opencv/install/include",
-            "C:/eigen3/include"
+            "C:/opencv/include",
+            "C:/eigen3/include/eigen3"
         }
 
         -- Link libraries
         libdirs
         {
-            "C:/boost/build/lib",
+            "C:/boost/lib",
             "C:/ffmpeg/lib/",
-            "C:/opencv/install/x86/mingw/lib"
+            "C:/opencv/x86/mingw/lib"
         }
 
         links
@@ -112,18 +112,18 @@ project "example-basic"
         -- Include third-party libraries
         includedirs
         {
-            "C:/boost/build/include/boost-1_58",
+            "C:/boost/include/boost-1_58",
             "C:/ffmpeg/include",
-            "C:/opencv/install/include",
-            "C:/eigen3/include"
+            "C:/opencv/include",
+            "C:/eigen3/include/eigen3"
         }
 
         -- Link libraries
         libdirs
         {
-            "C:/boost/build/lib",
+            "C:/boost/lib",
             "C:/ffmpeg/lib/",
-            "C:/opencv/install/x86/mingw/lib"
+            "C:/opencv/x86/mingw/lib"
         }
 
         links
