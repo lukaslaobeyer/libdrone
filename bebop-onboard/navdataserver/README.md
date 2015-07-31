@@ -4,8 +4,23 @@ This little program will run on your Bebop drone and retransmit the full navigat
 
 ## Automatic installation
 
-It is recommended to run the automated installer. Just ``cd`` into this directory and run ``./install.sh``.
+It is recommended to run the automated installer.
+
+### Linux
+
+Just ``cd`` into this directory and run ``./install.sh``.
 Then reboot your drone and it should be done.
+
+### Windows
+
+Activate telnet if it is not already installed. Open an administrative command prompt:
+
+```
+dism /online /Enable-Feature /FeatureName:TelnetClient
+```
+
+Then ``cd`` into this directory and run ``.\install.bat``.
+Now reboot your drone and it should be done.
 
 ## Manual installation
 
