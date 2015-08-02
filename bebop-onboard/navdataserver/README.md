@@ -19,7 +19,7 @@ Activate telnet if it is not already installed. Open an administrative command p
 dism /online /Enable-Feature /FeatureName:TelnetClient
 ```
 
-Then ``cd`` into this directory and run ``.\install.bat``.
+Then open a new administrative command prompt and ``cd`` into this directory. Finally run ``.\install.bat``. Do not switch windows while this script runs.
 Now reboot your drone and it should be done.
 
 ## Manual installation
