@@ -256,6 +256,12 @@ void Bebop::updateCycle()
 
 bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
 {
+	if(_ctrllink == nullptr)
+	{
+		navdata = nullptr;
+		return false;
+	}
+
 	shared_ptr<bebop::navdata> fullnavdata = _fullnavdata->getNavdata();
 	if(fullnavdata != nullptr)
 	{
@@ -263,6 +269,7 @@ bool Bebop::decodeNavdata(std::shared_ptr<drone::navdata> &navdata)
 		fullnavdata->flying = standardnavdata->flying;
 		fullnavdata->cameraorientation = standardnavdata->cameraorientation;
 		fullnavdata->linkquality = standardnavdata->linkquality;
+		fullnavdata->gps_fix = standardnavdata->gps_fix;
 		navdata = fullnavdata;
 	}
 	else

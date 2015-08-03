@@ -19,6 +19,8 @@ namespace bebop
 		float gps_speed; // Sped in m/s as measured by GPS
 		float gps_bearing; // GPS bearing in degrees
 		float gps_accuracy; // GPS accuracy in degrees
+		float gps_eph;
+		float gps_epv;
 	};
 
 	struct navdata : drone::navdata

@@ -202,9 +202,9 @@ void controllink::initConfig()
 	sendCommand(videoen_id, vid_args);
 
 	// Flat trim
-	navdata_id flattrim_id = command_ids::flattrim;
+	/*navdata_id flattrim_id = command_ids::flattrim;
 	vector<boost::any> ft_args = {};
-	sendCommand(flattrim_id, ft_args);
+	sendCommand(flattrim_id, ft_args);*/
 
 	// Tell the Bebop the controll application enters piloting mode (Whatever that does, Parrot! FreeFlight does it so I'll do it here, too.)
 	navdata_id pilotingmode_id = command_ids::piloting_mode;

@@ -70,11 +70,19 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 	memcpy(&speed_z, _navdata_buf.data() + 45 * sizeof(double), sizeof(double));
 	memcpy(&gps_accuracy, _navdata_buf.data() + 97 * sizeof(double), sizeof(double));
 
+	double gps_num_svs;
+	memcpy(&gps_num_svs, _navdata_buf.data() + 98 * sizeof(double), sizeof(double));
+
+	double gps_eph, gps_epv;
+	memcpy(&gps_eph, _navdata_buf.data() + 112 * sizeof(double), sizeof(double));
+	memcpy(&gps_epv, _navdata_buf.data() + 113 * sizeof(double), sizeof(double));
+
 	_navdata.altitude = height;
 	_navdata.attitude = Eigen::Vector3f(pitch, roll, yaw);
 	_navdata.batterystatus = bat_percent / 100.0f;
 	_navdata.full = true;
 	_navdata.gps_altitude = gps_altitude;
+	_navdata.gps_sats = gps_num_svs;
 	_navdata.latitude = latitude;
 	_navdata.linearvelocity = Eigen::Vector3f(speed_x, speed_y, speed_z);
 	_navdata.longitude = longitude;
@@ -83,6 +91,8 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 	_navdata.full_navdata.pressure = pressure;
 	_navdata.full_navdata.vbat = vbat;
 	_navdata.full_navdata.gps_accuracy = gps_accuracy;
+	_navdata.full_navdata.gps_eph = gps_eph;
+	_navdata.full_navdata.gps_epv = gps_epv;
 
 	// Listen for next packet
 	_navdata_socket->async_receive_from(boost::asio::buffer(_navdata_buf), _navdata_sender_endpoint, boost::bind(&fullnavdata::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
