@@ -83,6 +83,50 @@ void Bebop::setConfig(drone::config config)
 	}
 }
 
+void Bebop::setVideoSettings(bebop::pictureformat pic_fmt, bebop::whitebalancemode wb_mode, bebop::antiflickermode af_mode, float exposure, float saturation)
+{
+	bebop::navdata_id picfmt_id = bebop::command_ids::picture_format;
+	vector<boost::any> picfmt_args{(uint32_t) pic_fmt};
+
+	bebop::navdata_id wbmode_id = bebop::command_ids::whitebalance_mode;
+	vector<boost::any> wbmode_args{(uint32_t) wb_mode};
+
+	bebop::navdata_id afmode_id = bebop::command_ids::antiflickering_mode;
+	vector<boost::any> afmode_args{(uint32_t) af_mode};
+
+	bebop::navdata_id exp_id = bebop::command_ids::picture_exposure;
+	vector<boost::any> exp_args{(float) exposure};
+
+	bebop::navdata_id sat_id = bebop::command_ids::picture_saturation;
+	vector<boost::any> sat_args{(float) saturation};
+
+	if(_ctrllink == nullptr)
+	{
+		_initialCommands_id_queue.push(picfmt_id);
+		_initialCommands_arg_queue.push(picfmt_args);
+
+		_initialCommands_id_queue.push(wbmode_id);
+		_initialCommands_arg_queue.push(wbmode_args);
+
+		_initialCommands_id_queue.push(afmode_id);
+		_initialCommands_arg_queue.push(afmode_args);
+
+		_initialCommands_id_queue.push(exp_id);
+		_initialCommands_arg_queue.push(exp_args);
+
+		_initialCommands_id_queue.push(sat_id);
+		_initialCommands_arg_queue.push(sat_args);
+	}
+	else
+	{
+		_ctrllink->sendCommand(picfmt_id, picfmt_args);
+		_ctrllink->sendCommand(wbmode_id, wbmode_args);
+		_ctrllink->sendCommand(afmode_id, afmode_args);
+		_ctrllink->sendCommand(exp_id, exp_args);
+		_ctrllink->sendCommand(sat_id, sat_args);
+	}
+}
+
 cv::Mat Bebop::getLatestFrame()
 {
 	if(_ctrllink == nullptr)
@@ -196,6 +240,13 @@ drone::connectionstatus Bebop::tryConnecting()
 		}
 
 		_config_initialized = false;
+
+		while(_initialCommands_id_queue.size() > 0)
+		{
+			_ctrllink->sendCommand(_initialCommands_id_queue.front(), _initialCommands_arg_queue.front());
+			_initialCommands_id_queue.pop();
+			_initialCommands_arg_queue.pop();
+		}
 
 		return drone::connectionstatus::CONNECTION_ESTABLISHED;
 	}

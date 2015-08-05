@@ -34,6 +34,30 @@ namespace bebop
 		int gps_sats; // Number of available GPS sattelites
 		navdata_extension full_navdata; // Full navdata!
 	};
+
+	enum pictureformat
+	{
+		PICFMT_RAW = 0,
+		PICFMT_JPEG,
+		PICFMT_SNAPSHOT,
+		PICFMT_JPEG_FISHEYE
+	};
+
+	enum whitebalancemode
+	{
+		WB_AUTO = 0,
+		WB_TUNGSTEN,
+		WB_DAYLIGHT,
+		WB_CLOUDY,
+		WB_COOL_WHITE
+	};
+
+	enum antiflickermode
+	{
+		AF_AUTO = 0,
+		AF_50HZ,
+		AF_60HZ
+	};
 }
 
 #endif

@@ -16,6 +16,8 @@
 #include <memory>
 #include <limits>
 #include <cmath>
+#include <queue>
+#include <vector>
 
 class Bebop : public FPVDrone
 {
@@ -30,6 +32,8 @@ class Bebop : public FPVDrone
 		drone::config getConfig();
 		void setLimits(drone::limits limits);
 		void setConfig(drone::config config);
+
+		void setVideoSettings(bebop::pictureformat pic_fmt, bebop::whitebalancemode wb_mode, bebop::antiflickermode af_mode, float exposure, float saturation);
 
 		cv::Mat getLatestFrame();
 		unsigned long getFrameAge();
@@ -58,6 +62,9 @@ class Bebop : public FPVDrone
 
 		drone::config _defaultConfig{drone::limits{0.2f, 2.0f, 1.2f, 5.0f}, false, true};
 		drone::config _customInitialConfig{drone::limits{0, 0, 0, 0}, false, false};
+
+		std::queue<bebop::navdata_id> _initialCommands_id_queue;
+		std::queue<std::vector<boost::any>> _initialCommands_arg_queue;
 
 		bool _outdoor = false;
 

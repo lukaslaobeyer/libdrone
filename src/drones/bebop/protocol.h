@@ -172,16 +172,18 @@ namespace bebop
 		const navdata_id max_vertical_speed{1, 11, 0, "f", true}; // Maximum vertical speed in m/s
 		const navdata_id max_rotation_speed{1, 11, 1, "f", true}; // Maximum rotation speed in deg/s
 		const navdata_id hull_protection{1, 11, 2, "B", true}; // 1 for hull protection
-		const navdata_id outdoor_flight{1, 11, 3, "B", true}; // 1 for outdoor flight - WARNING: ignored by drone
+		const navdata_id outdoor_flight{1, 11, 3, "B", true}; // 1 for outdoor flight - WARNING: ignored by drone (??)
 
-		const navdata_id picture_format{1, 19, 0, "B", true}; // 0: raw; 1: 4:3 JPEG; 2: 16:9 snapshot TODO: verify
-		const navdata_id whitebalance_mode{1, 19, 1, "B", true}; // 0: auto; 1: tungsten; 2: daylight; 3: cloudy; 4: cool white TODO: verify
-		const navdata_id picture_exposition{1, 19, 2, "f", true}; // Exposition, by default in range [-3:3]
+		const navdata_id picture_format{1, 19, 0, "I", true}; // 0: raw; 1: 4:3 JPEG; 2: 16:9 snapshot
+		const navdata_id whitebalance_mode{1, 19, 1, "I", true}; // 0: auto; 1: tungsten; 2: daylight; 3: cloudy; 4: cool white
+		const navdata_id picture_exposure{1, 19, 2, "f", true}; // Exposure, by default in range [-3:3]
 		const navdata_id picture_saturation{1, 19, 3, "f", true}; // Saturation, by default in range [-100:100]
 		const navdata_id video_autorecord{1, 19, 5, "BB", true}; // 1: 1 for video autorecord enable, 0 otherwise; 2: Mass storage ID
 
 		const navdata_id set_home{1, 23, 0, "ddd", true}; // Latitude, longitude in decimal degrees; altitude in meters
 		const navdata_id reset_home{1, 23, 1, "", true};
+
+		const navdata_id antiflickering_mode{1, 29, 1, "I", true};
 
 		const navdata_id stream_720p{1, 32, 0, "L", true};
 	}
