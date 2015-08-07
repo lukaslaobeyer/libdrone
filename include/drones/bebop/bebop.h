@@ -35,6 +35,8 @@ class Bebop : public FPVDrone
 
 		void setVideoSettings(bebop::pictureformat pic_fmt, bebop::whitebalancemode wb_mode, bebop::antiflickermode af_mode, float exposure, float saturation);
 
+		void resetSettings();
+
 		cv::Mat getLatestFrame();
 		unsigned long getFrameAge();
 

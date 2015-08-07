@@ -954,6 +954,15 @@ void controllink::decodeNavdataPacket(d2cbuffer &receivedDataBuffer, size_t byte
 			BOOST_LOG_TRIVIAL(warning) << "Drone reporting disconnect for unknown reason!";
 		}
 	}
+	else if(navdata_key == navdata_ids::picture_exposure)
+	{
+		float value, min, max;
+		memcpy(&value, &_navdata_receivedDataBuffer.data()[11], sizeof(float));
+		memcpy(&min, &_navdata_receivedDataBuffer.data()[11 + 4], sizeof(float));
+		memcpy(&max, &_navdata_receivedDataBuffer.data()[11 + 4*2], sizeof(float));
+
+		BOOST_LOG_TRIVIAL(debug) << "Exposure changed to " << value << "; Range: " << min << " - " << max;
+	}
 	else
 	{
 		BOOST_LOG_TRIVIAL(debug) << "UNKNOWN NAVDATA: " << (int) dataDevice << "; " << (int) dataClass << "; " << (int) dataID;

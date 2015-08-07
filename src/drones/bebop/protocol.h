@@ -130,7 +130,7 @@ namespace bebop
 
 		const navdata_id picture_format{1, 20, 0, "B", false};
 		const navdata_id whitebalance_mode{1, 20, 1, "B", false};
-		const navdata_id picture_exposition{1, 20, 2, "fff", false}; // current, min, max
+		const navdata_id picture_exposure{1, 20, 2, "fff", false}; // current, min, max
 		const navdata_id picture_saturation{1, 20, 3, "fff", false}; // current, min, max
 		const navdata_id video_autorecord{1, 20, 5, "BB", false}; // 1: 1 if enabled, 2: mass storage ID
 
@@ -142,6 +142,8 @@ namespace bebop
 	{
 		const navdata_id getsettings{0, 2, 0, "", true}; // Tell the drone to send back all settings
 		const navdata_id getstatus{0, 4, 0, "", true}; // Tell the drone to send back all status information (battery charge, flying state, etc.)
+
+		const navdata_id reset{0, 2, 1, "", true}; // Reset all settings
 
 		const navdata_id setdate{0, 4, 1, "s", true}; // Date in ISO-8601 format
 		const navdata_id settime{0, 4, 2, "s", true}; // Time in ISO-8601 format

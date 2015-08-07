@@ -127,6 +127,22 @@ void Bebop::setVideoSettings(bebop::pictureformat pic_fmt, bebop::whitebalancemo
 	}
 }
 
+void Bebop::resetSettings()
+{
+	bebop::navdata_id reset_id = bebop::command_ids::reset;
+	vector<boost::any> reset_args{};
+
+	if(_ctrllink == nullptr)
+	{
+		_initialCommands_id_queue.push(reset_id);
+		_initialCommands_arg_queue.push(reset_args);
+	}
+	else
+	{
+		_ctrllink->sendCommand(reset_id, reset_args);
+	}
+}
+
 cv::Mat Bebop::getLatestFrame()
 {
 	if(_ctrllink == nullptr)
