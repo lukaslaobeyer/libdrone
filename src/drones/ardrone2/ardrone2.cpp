@@ -218,6 +218,11 @@ void ARDrone2::stopRecording()
 	_recording = false;
 }
 
+drone::error ARDrone2::accept(dronevisitor *visitor)
+{
+	return visitor->visit(shared_from_this());
+}
+
 drone::connectionstatus ARDrone2::tryConnecting()
 {
 	try

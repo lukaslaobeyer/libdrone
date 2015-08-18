@@ -3,6 +3,7 @@
 
 #include <types.h>
 #include <commands.h>
+#include <dronevisitor.h>
 #include <interface/iconnectionstatuslistener.h>
 #include <interface/inavdatalistener.h>
 #include <interface/istatuslistener.h>
@@ -18,6 +19,12 @@ class Drone
 {
 	public:
 		virtual ~Drone() {};
+
+		/*
+		 * Visitor accept function
+		 */
+
+		virtual drone::error accept(dronevisitor *visitor) = 0;
 
 		/*
 		 * Setup related functions

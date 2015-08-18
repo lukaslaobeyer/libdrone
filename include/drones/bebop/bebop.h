@@ -19,7 +19,7 @@
 #include <queue>
 #include <vector>
 
-class Bebop : public FPVDrone
+class Bebop : public FPVDrone, public std::enable_shared_from_this<Bebop>
 {
 	public:
 		explicit Bebop(std::string ip);
@@ -44,6 +44,8 @@ class Bebop : public FPVDrone
 		bool isRecording();
 		fpvdrone::picturestatus startRecording();
 		void stopRecording();
+
+		drone::error accept(dronevisitor *visitor);
 
 	protected:
 		drone::connectionstatus tryConnecting();

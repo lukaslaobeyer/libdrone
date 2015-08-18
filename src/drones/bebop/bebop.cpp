@@ -236,6 +236,11 @@ void Bebop::stopRecording()
 	_recording = false;
 }
 
+drone::error Bebop::accept(dronevisitor *visitor)
+{
+	return visitor->visit(shared_from_this());
+}
+
 drone::connectionstatus Bebop::tryConnecting()
 {
 	try

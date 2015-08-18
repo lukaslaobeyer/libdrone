@@ -47,6 +47,8 @@ namespace drone
 	{
 		NOT_CONNECTED,
 		NOT_ARMED,
+		NOT_SUPPORTED,
+		ERR_UNKNOWN,
 		OK
 	};
 

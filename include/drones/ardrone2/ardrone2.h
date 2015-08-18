@@ -21,7 +21,7 @@
 
 #include <boost/asio.hpp>
 
-class ARDrone2 : public FPVDrone
+class ARDrone2 : public FPVDrone, public std::enable_shared_from_this<ARDrone2>
 {
 	public:
 		explicit ARDrone2(std::string saveDir, std::string ip);
@@ -41,6 +41,8 @@ class ARDrone2 : public FPVDrone
 		bool isRecording();
 		fpvdrone::picturestatus startRecording();
 		void stopRecording();
+
+		drone::error accept(dronevisitor *visitor);
 
 	protected:
 		drone::connectionstatus tryConnecting();

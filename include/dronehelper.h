@@ -31,12 +31,15 @@ drone::error drone_setRollRel(std::shared_ptr<Drone> drone, float rollRel);
 drone::error drone_setYawRel(std::shared_ptr<Drone> drone, float yawRel);
 drone::error drone_setGazRel(std::shared_ptr<Drone> drone, float gazRel);
 
-drone::error drone_flip(std::shared_ptr<ARDrone2> drone);
-drone::error drone_flip(std::shared_ptr<Bebop> drone);
+drone::error drone_flip(std::shared_ptr<Drone> drone, std::string direction = "LEFT");
 
-drone::error drone_switchview(std::shared_ptr<ARDrone2> drone);
-drone::error drone_switchview(std::shared_ptr<Bebop> drone);
+drone::error drone_switchview(std::shared_ptr<Drone> drone, std::string view = "TOGGLE");
 
-drone::error drone_setCameraOrientation(std::shared_ptr<Bebop> drone, float tilt, float pan);
+drone::error drone_setCameraOrientation(std::shared_ptr<Drone> drone, float tilt, float pan);
+
+drone::error drone_startRecording(std::shared_ptr<Drone>);
+drone::error drone_stopRecording(std::shared_ptr<Drone>);
+
+drone::error drone_takePicture(std::shared_ptr<Drone>);
 
 #endif
