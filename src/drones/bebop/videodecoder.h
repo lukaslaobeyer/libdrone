@@ -18,7 +18,7 @@ namespace bebop
 	{
 		public:
 			videodecoder(int fragmentSize, int maxFragmentNumber);
-			bool insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex, int fragmentsInFrame, int fragmentIndex, int fragmentSize);
+			bool insertFragment(d2cbuffer &receivedDataBuffer, uint16_t frameIndex, int fragmentsInFrame, int fragmentIndex, int fragmentSize);
 			cv::Mat getLatestFrame();
 			unsigned long getLatestFrameTime();
 

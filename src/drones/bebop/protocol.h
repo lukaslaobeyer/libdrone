@@ -89,6 +89,9 @@ namespace bebop
 
 		const navdata_id outdoor_wifi_state{0, 10, 0, "B", false}; // 1 if outdoor, 0 if indoor
 
+		const navdata_id flightplan_state_changed{0, 12, 0, "IsI", false};
+		const navdata_id flightplan_error{0, 12, 1, "B", false};
+
 		const navdata_id magneto_calib_state{0, 14, 0, "BBBB", false};
 		const navdata_id magneto_calib_required{0, 14, 1, "B", false};
 
@@ -151,6 +154,10 @@ namespace bebop
 		const navdata_id piloting_mode{0, 8, 0, "B", true}; // 1 to enable piloting mode, 0 to disable
 
 		const navdata_id outdoor_wifi_mode{0, 9, 0, "B", true}; // 1 for outdoor, 0 for indoor
+
+		const navdata_id flightplan_start{0, 11, 0, "s", true}; // Start executing the flight plan. Argument: mavlink filename
+		const navdata_id flightplan_pause{0, 11, 1, "", true};
+		const navdata_id flightplan_stop{0, 11, 2, "", true};
 
 		const navdata_id flattrim{1, 0, 0, "", true};
 		const navdata_id takeoff{1, 0, 1, "", true};

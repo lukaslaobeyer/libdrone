@@ -13,19 +13,19 @@ videodecoder::videodecoder(int fragmentSize, int maxFragmentNumber) : _fragmentS
 	_framebuffer.resize(fragmentSize * maxFragmentNumber);
 }
 
-bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex, int fragmentsInFrame, int fragmentIndex, int fragmentSize)
+bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, uint16_t frameIndex, int fragmentsInFrame, int fragmentIndex, int fragmentSize)
 {
 	static bool invalidFrame = false;
 	static int frameSize = 0;
-	static int receivedFragmentCount = 0;
+	static long receivedFragmentCount = 0;
 	static int lastFragmentIndex = -1;
-	static int lastFrameIndex = -1;
+	static long lastFrameIndex = -1;
 
-	static int errors = 0; // For error rate calculation
-	static int errors_rolling = 0; // "
-	static int receivedFrameCount = 0; // "
+	static long errors = 0; // For error rate calculation
+	static long errors_rolling = 0; // "
+	static long receivedFrameCount = 0; // "
 
-	if(frameIndex > lastFrameIndex)
+	if(((long) frameIndex > lastFrameIndex) || ((lastFrameIndex == (long) UINT16_MAX) && frameIndex == 0)) // Second condition in case frame counter wrapped from UINT16_MAX to 0
 	{
 		// New frame: Reset stuff
 		receivedFragmentCount = 0; // Reset fragment counter
@@ -73,6 +73,7 @@ bool videodecoder::insertFragment(d2cbuffer &receivedDataBuffer, int frameIndex,
 	{
 		//BOOST_LOG_TRIVIAL(debug) << "decoding...";
 		bool error = !decodeFrame(frameSize);
+
 		if(error)
 		{
 			errors_rolling++;
