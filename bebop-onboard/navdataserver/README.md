@@ -4,7 +4,7 @@ This little program will run on your Bebop drone and retransmit the full navigat
 
 ## Automatic installation
 
-It is recommended to run the automated installer.
+It is recommended to run the automated installer. Make sure you have Bebop firmware version 3.2 or later.
 
 ### Linux
 

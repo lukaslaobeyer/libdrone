@@ -1,5 +1,7 @@
 #include "fullnavdata.h"
 
+#include <vector>
+#include <utility>
 #include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
 
@@ -53,29 +55,52 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 	double speed_y;
 	double speed_z;
 	double gps_accuracy;
-
-	memcpy(&roll, _navdata_buf.data() + 11 * sizeof(double), sizeof(double));
-	memcpy(&pitch, _navdata_buf.data() + 12 * sizeof(double), sizeof(double));
-	memcpy(&yaw, _navdata_buf.data() + 13 * sizeof(double), sizeof(double));
-	memcpy(&height, _navdata_buf.data() + 28 * sizeof(double), sizeof(double));
-	memcpy(&height_ultrasonic, _navdata_buf.data() + 26 * sizeof(double), sizeof(double));
-	memcpy(&pressure, _navdata_buf.data() + 27 * sizeof(double), sizeof(double));
-	memcpy(&vbat, _navdata_buf.data() + 69 * sizeof(double), sizeof(double));
-	memcpy(&latitude, _navdata_buf.data() + 92 * sizeof(double), sizeof(double));
-	memcpy(&longitude, _navdata_buf.data() + 93 * sizeof(double), sizeof(double));
-	memcpy(&gps_altitude, _navdata_buf.data() + 94 * sizeof(double), sizeof(double));
-	memcpy(&bat_percent, _navdata_buf.data() + 132 * sizeof(double), sizeof(double));
-	memcpy(&speed_x, _navdata_buf.data() + 23 * sizeof(double), sizeof(double));
-	memcpy(&speed_y, _navdata_buf.data() + 24 * sizeof(double), sizeof(double));
-	memcpy(&speed_z, _navdata_buf.data() + 45 * sizeof(double), sizeof(double));
-	memcpy(&gps_accuracy, _navdata_buf.data() + 97 * sizeof(double), sizeof(double));
-
 	double gps_num_svs;
-	memcpy(&gps_num_svs, _navdata_buf.data() + 98 * sizeof(double), sizeof(double));
-
 	double gps_eph, gps_epv;
-	memcpy(&gps_eph, _navdata_buf.data() + 112 * sizeof(double), sizeof(double));
-	memcpy(&gps_epv, _navdata_buf.data() + 113 * sizeof(double), sizeof(double));
+
+	std::vector<std::pair<double *, int>> data_table = {
+			{&roll, 61},
+			{&pitch, 62},
+			{&yaw, 63},
+			{&height, 76},
+			{&height_ultrasonic, 15},
+			{&pressure, 9},
+			{&vbat, 58},
+			{&latitude, 22},
+			{&longitude, 23},
+			{&gps_altitude, 24},
+			{&bat_percent, 59},
+			{&speed_x, 73},
+			{&speed_y, 74},
+			{&speed_z, 75},
+			{&gps_accuracy, 27},
+			{&gps_num_svs, 28},
+			{&gps_eph, 32},
+			{&gps_epv, 34}
+	};
+
+	/*memcpy(&roll, _navdata_buf.data() + 11 * sizeof(double), sizeof(double)); // 62
+	memcpy(&pitch, _navdata_buf.data() + 12 * sizeof(double), sizeof(double)); // 63
+	memcpy(&yaw, _navdata_buf.data() + 13 * sizeof(double), sizeof(double)); // 64
+	memcpy(&height, _navdata_buf.data() + 28 * sizeof(double), sizeof(double)); // 77
+	memcpy(&height_ultrasonic, _navdata_buf.data() + 26 * sizeof(double), sizeof(double)); // 16
+	memcpy(&pressure, _navdata_buf.data() + 27 * sizeof(double), sizeof(double)); // 10
+	memcpy(&vbat, _navdata_buf.data() + 69 * sizeof(double), sizeof(double)); // 58 'raw'; 59 'compensated'
+	memcpy(&latitude, _navdata_buf.data() + 92 * sizeof(double), sizeof(double)); // 23
+	memcpy(&longitude, _navdata_buf.data() + 93 * sizeof(double), sizeof(double)); // 24
+	memcpy(&gps_altitude, _navdata_buf.data() + 94 * sizeof(double), sizeof(double)); // 25
+	memcpy(&bat_percent, _navdata_buf.data() + 132 * sizeof(double), sizeof(double)); // 60
+	memcpy(&speed_x, _navdata_buf.data() + 23 * sizeof(double), sizeof(double)); // 74
+	memcpy(&speed_y, _navdata_buf.data() + 24 * sizeof(double), sizeof(double)); // 75
+	memcpy(&speed_z, _navdata_buf.data() + 45 * sizeof(double), sizeof(double)); // 76
+	memcpy(&gps_accuracy, _navdata_buf.data() + 97 * sizeof(double), sizeof(double)); // 28
+	memcpy(&gps_num_svs, _navdata_buf.data() + 98 * sizeof(double), sizeof(double)); // 29
+	memcpy(&gps_eph, _navdata_buf.data() + 112 * sizeof(double), sizeof(double)); // 33; 34
+	memcpy(&gps_epv, _navdata_buf.data() + 113 * sizeof(double), sizeof(double)); // 35*/
+	for(const std::pair<double *, int> &element : data_table)
+	{
+		memcpy(element.first, _navdata_buf.data() + element.second * sizeof(double), sizeof(double));
+	}
 
 	_navdata.altitude = height;
 	_navdata.attitude = Eigen::Vector3f(pitch, roll, yaw);

@@ -11,7 +11,7 @@
 
 #define DEFAULT_BLACKBOX_FILE "/data/ftp/internal_000/Debug/current/blackbox/light_run_0"
 #define MAX_FILENAME_LENGTH 128
-#define HEADER_MAX_SIZE 4096
+#define HEADER_MAX_SIZE 4096*4
 #define ERR_HEADER_TOO_LONG 1
 #define UPDATE_INTERVAL_MS 25
 #define DATA_MARKER "-- Data\n"

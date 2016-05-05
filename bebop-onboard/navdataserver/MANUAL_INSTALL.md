@@ -12,6 +12,11 @@ The Bebop has a telnet server. You automatically login as root.
 telnet 192.168.42.1
 ```
 
+For Bebop firmware versions 3.X, activate writing to filesystem:
+```
+mount -o remount,rw /
+```
+
 ## 2. Activate debug mode
 
 ``/etc/debug.conf``: Change ``BLACKBOX=0`` to ``BLACKBOX=1``
@@ -35,7 +40,8 @@ chmod +x /data/ftp/internal_000/navdataserver/startnavdataserver.sh
 
 ## 4. Autostart on Bebop boot
 
-edit ``/etc/init.d/rcS``
+edit ``/etc/init.d/rcS`` for Bebop firmwares older than 3.X
+edit ``/etc/init.d/rcS_mode_default``
 
 Insert "/data/ftp/internal_000/navdataserver/startnavdataserver.sh &" right before the "sleep 1" at the end of the file.
 
