@@ -58,7 +58,7 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 	double gps_num_svs;
 	double gps_eph, gps_epv;
 
-	std::vector<std::pair<double *, int>> data_table = {
+	/*std::vector<std::pair<double *, int>> data_table = { // Firmware 3.2
 			{&roll, 61},
 			{&pitch, 62},
 			{&yaw, 63},
@@ -75,6 +75,27 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 			{&speed_z, 75},
 			{&gps_accuracy, 27},
 			{&gps_num_svs, 28},
+			{&gps_eph, 32},
+			{&gps_epv, 34}
+	};*/
+
+	std::vector<std::pair<double *, int>> data_table = { // Firmware 3.3
+			{&roll, 100}, //ok
+			{&pitch, 162}, //ok
+			{&yaw, 110}, //ok
+			{&height, 76}, //ok
+			{&height_ultrasonic, 142}, //ok
+			{&pressure, 141}, //ok
+			{&vbat, 26}, //ok
+			{&latitude, 126}, //ok
+			{&longitude, 127}, //ok
+			{&gps_altitude, 124}, //ok
+			{&bat_percent, 25}, //ok
+			{&speed_x, 148}, //ok
+			{&speed_y, 149}, //ok
+			{&speed_z, 150}, //ok
+			{&gps_accuracy, 27},
+			{&gps_num_svs, 128}, //ok
 			{&gps_eph, 32},
 			{&gps_epv, 34}
 	};
