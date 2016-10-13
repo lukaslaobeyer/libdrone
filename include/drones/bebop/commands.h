@@ -17,6 +17,7 @@ namespace bebop
 			static const int PICTURE_FORMAT		 = 0xBEB0005;
 			static const int SET_HOME			 = 0xBEB0006;
 			static const int NAVIGATE_HOME		 = 0xBEB0007;
+			static const int SET_RESOLUTION      = 0xBEB0008;
 		};
 
 		struct flip : drone::command
@@ -63,6 +64,17 @@ namespace bebop
 			navigate_home(bool start)
 			: drone::command{id::NAVIGATE_HOME, true, std::vector<boost::any>{start}} {}
 		};
+
+		/*struct set_resolution : drone::command
+		{
+			enum resolution
+			{
+				STREAM720P_REC720P,
+				STREAM480P_REC1080P
+			};
+			set_resolution(resolution r)
+			: drone::command{id::SET_RESOLUTION, true, std::vector<boost::any>{r}} {}
+		};*/
 	}
 }
 

@@ -219,6 +219,26 @@ void controllink::initConfig()
 	/*navdata_id autorecord_id = command_ids::video_autorecord;
 	vector<boost::any> ar_args = {(uint8_t) 0, (uint8_t) 0};
 	sendCommand(autorecord_id, ar_args);*/
+
+	navdata_id resolution_id = command_ids::resolution;
+	vector<boost::any> resolution_args = {(uint8_t) 0};
+	sendCommand(resolution_id, resolution_args);
+
+	navdata_id framerate_id = command_ids::framerate;
+	vector<boost::any> framerate_args = {(uint8_t) 2};
+	sendCommand(framerate_id, framerate_args);
+
+	navdata_id recording_mode_id = command_ids::recording_mode;
+	vector<boost::any> recording_mode_args = {(uint8_t) 0};
+	sendCommand(recording_mode_id, recording_mode_args);
+
+    navdata_id stabilization_mode_id = command_ids::stabilization_mode;
+    vector<boost::any> stabilization_mode_args = {(uint8_t) 0};
+    sendCommand(stabilization_mode_id, stabilization_mode_args);
+
+    navdata_id streaming_mode_id = command_ids::streaming_mode;
+    vector<boost::any> streaming_mode_args = {(uint8_t) 0};
+    sendCommand(streaming_mode_id, streaming_mode_args);
 }
 
 void controllink::setLimits(float max_altitude, float max_tilt, float max_vertical_speed, float max_yaw_speed)

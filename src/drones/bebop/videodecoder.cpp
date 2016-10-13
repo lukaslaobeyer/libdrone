@@ -166,7 +166,7 @@ void videodecoder::initializeSwsContext(int width, int height)
 		}
 		else
 		{
-			BOOST_LOG_TRIVIAL(debug) << "SwsContext initialized";
+			BOOST_LOG_TRIVIAL(debug) << "SwsContext initialized, frame size: " << width << "x" << height;
 		}
 
 		// Allocate buffer for the _frame_bgr AVFrame and fill it

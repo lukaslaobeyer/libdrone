@@ -195,6 +195,13 @@ namespace bebop
 		const navdata_id antiflickering_mode{1, 29, 1, "I", true};
 
 		const navdata_id stream_720p{1, 32, 0, "L", true};
+
+		const navdata_id stabilization_mode{1, 19, 7, "B", true}; // 0: Pitch/roll stabilization, 1: Pitch, 2: Roll, 3: No stabilization
+		const navdata_id recording_mode{1, 19, 7, "B", true}; // 0: Better quality; 1: More time
+		const navdata_id framerate{1, 19, 8, "B", true}; // 0: 24 FPS, 1: 25 FPS, 2: 30 FPS
+		const navdata_id resolution{1, 19, 9, "B", true}; // 0: Stream 480P, record 1080p; 1: Stream and record 720P
+
+		const navdata_id streaming_mode{1, 21, 1, "B", true}; // 0: Low latency, 1: High quality, 2: High quality and reliability, Variable framerate
 	}
 }
 
